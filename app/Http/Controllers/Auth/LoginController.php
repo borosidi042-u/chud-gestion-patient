@@ -5,69 +5,90 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 class LoginController extends Controller
 {
-    // CONNEXION
-
-    public function showLoginForm() {
+    // ── Page de connexion ────────────────────────────────────────────────
+    public function showLoginForm()
+    {
+        if (Auth::check()) return redirect()->route('dashboard');
         return view('auth.login');
     }
 
-    public function login(Request $request) {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
+    // ── Traitement connexion ─────────────────────────────────────────────
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email'    => ['required', 'email'],
+            'password' => ['required', 'string', 'min:6'],
+        ], [
+            'email.required'    => 'L\'adresse email est obligatoire.',
+            'email.email'       => 'L\'adresse email n\'est pas valide.',
+            'password.required' => 'Le mot de passe est obligatoire.',
+            'password.min'      => 'Au moins 6 caractères requis.',
         ]);
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt($request->only('email','password'), $request->boolean('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended('/dashboard');
+            return redirect()->intended(route('dashboard'))
+                             ->with('success', 'Bienvenue, ' . Auth::user()->prenom . ' !');
         }
 
-        return back()->withErrors([
-            'email' => 'Identifiants incorrects ou compte inexistant.',
-        ])->onlyInput('email');
+        return back()
+            ->withInput($request->only('email','remember'))
+            ->withErrors(['email' => 'Email ou mot de passe incorrect.']);
     }
 
-    // INSCRIPTION
-
-    public function showRegisterForm() {
+    // ── Page d'inscription ───────────────────────────────────────────────
+    public function showRegisterForm()
+    {
+        if (Auth::check()) return redirect()->route('dashboard');
         return view('auth.register');
     }
 
-    public function register(Request $request) {
-        // Validation stricte pour ton projet SIL
+    // ── Traitement inscription → redirige vers LOGIN (pas dashboard) ─────
+    public function register(Request $request)
+    {
         $request->validate([
-            'nom' => 'required|string|max:255',
-            'prenom' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed', // 'confirmed' cherche password_confirmation
+            'nom'      => ['required','string','max:100','regex:/^[\p{L}\s\-\']+$/u'],
+            'prenom'   => ['required','string','max:100','regex:/^[\p{L}\s\-\']+$/u'],
+            'email'    => ['required','email','max:255','unique:users,email'],
+            'password' => ['required','string','min:8','confirmed'],
+        ], [
+            'nom.required'       => 'Le nom est obligatoire.',
+            'nom.regex'          => 'Le nom ne doit contenir que des lettres.',
+            'prenom.required'    => 'Le prénom est obligatoire.',
+            'prenom.regex'       => 'Le prénom ne doit contenir que des lettres.',
+            'email.required'     => 'L\'email est obligatoire.',
+            'email.email'        => 'L\'email n\'est pas valide.',
+            'email.unique'       => 'Cet email est déjà utilisé.',
+            'password.required'  => 'Le mot de passe est obligatoire.',
+            'password.min'       => 'Au moins 8 caractères requis.',
+            'password.confirmed' => 'Les mots de passe ne correspondent pas.',
         ]);
 
-        // Création de l'utilisateur avec hachage sécurisé
-        $user = User::create([
-            'nom' => $request->nom,
-            'prenom' => $request->prenom,
-            'email' => $request->email,
-            'role' => 'utilisateur',
+        User::create([
+            'nom'      => strtoupper(trim($request->nom)),
+            'prenom'   => ucfirst(strtolower(trim($request->prenom))),
+            'email'    => strtolower(trim($request->email)),
             'password' => Hash::make($request->password),
+            'role'     => 'user',
         ]);
 
-        // Connexion automatique après inscription
-        Auth::login($user);
-
-        return redirect()->route('dashboard');
+        // ✅ Redirige vers la PAGE DE CONNEXION (pas le dashboard)
+        return redirect()->route('login')
+                         ->with('status', 'Compte créé avec succès ! Connectez-vous maintenant.');
     }
 
-    // --- DÉCONNEXION ---
-
-    public function logout(Request $request) {
+    // ── Déconnexion ──────────────────────────────────────────────────────
+    public function logout(Request $request)
+    {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect('/login');
+        return redirect()->route('login')
+                         ->with('status', 'Vous avez été déconnecté avec succès.');
     }
 }
