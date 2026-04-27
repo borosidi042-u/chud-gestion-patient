@@ -13,12 +13,18 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+<<<<<<< HEAD
             $table->string('nom');
             $table->string('prenom');
             $table->string('role')->default('user');
+=======
+            $table->string('nom');        // Au lieu de 'name'
+            $table->string('prenom');     // Ajouté
+>>>>>>> 18a0e30cc890458fb89dee1058d15cd353d11a26
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('role')->default('agent'); // Pour gérer Admin/Agent
             $table->rememberToken();
             $table->timestamps();
         });
