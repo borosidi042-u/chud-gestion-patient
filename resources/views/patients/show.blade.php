@@ -75,9 +75,9 @@
     </div>
     <div class="card-body p-3">
         @forelse($historique as $item)
-        <div class="d-flex gap-3 hist-item {{ $item['type']==='circuit' ? 'hist-circuit' : 'hist-facture' }}">
-            <div class="hist-icon" style="{{ $item['type']==='circuit' ? 'background:var(--blue-l);color:var(--blue)' : 'background:var(--green-l);color:var(--green)' }}">
-                <i class="bi {{ $item['type']==='circuit' ? 'bi-diagram-3-fill' : 'bi-receipt-cutoff' }}"></i>
+        <div class="d-flex gap-3 hist-item {{ $item['type']==='circuit' ? 'hist-circuit' : 'hist-facture' }}" style="margin-bottom:1rem;border-bottom:1px solid #f0f0f0;padding-bottom:1rem;">
+            <div class="hist-icon" style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;{{ $item['type']==='circuit' ? 'background:var(--blue-l);color:var(--blue)' : 'background:var(--green-l);color:var(--green)' }}">
+                <i class="bi {{ $item['type']==='circuit' ? 'bi-diagram-3-fill' : 'bi-receipt-cutoff' }}" style="font-size:1.2rem;"></i>
             </div>
             <div class="flex-grow-1">
                 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
@@ -89,26 +89,81 @@
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <small style="color:var(--muted)">{{ \Carbon\Carbon::parse($item['date'])->format('d/m/Y H:i') }}</small>
-                        @if(Auth::user()->role==='admin')
-                        @if($item['type']==='circuit')
-                        <form method="POST" action="{{ route('circuits.destroy',$item['id']) }}"
-                              onsubmit="return confirm('Supprimer ce passage ?')">
-                            @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-outline-danger py-0 px-1"><i class="bi bi-trash" style="font-size:.75rem"></i></button>
-                        </form>
-                        @else
-                        <a href="{{ route('factures.edit',$item['id']) }}" class="btn btn-sm btn-outline-secondary py-0 px-1"><i class="bi bi-pencil" style="font-size:.75rem"></i></a>
-                        <form method="POST" action="{{ route('factures.destroy',$item['id']) }}"
-                              onsubmit="return confirm('Supprimer cette facture ?')">
-                            @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-outline-danger py-0 px-1"><i class="bi bi-trash" style="font-size:.75rem"></i></button>
-                        </form>
+                        @if($item['type']==='facture')
+                            <a href="{{ route('factures.preview', $item['id']) }}"
+                               class="btn btn-sm btn-outline-info py-0 px-1"
+                               target="_blank"
+                               title="Aperçu">
+                                <i class="bi bi-eye" style="font-size:.75rem"></i>
+                            </a>
+                            <a href="{{ route('factures.download', $item['id']) }}"
+                               class="btn btn-sm btn-outline-primary py-0 px-1"
+                               title="Télécharger PDF">
+                                <i class="bi bi-download" style="font-size:.75rem"></i>
+                            </a>
                         @endif
+                        @if(Auth::user()->role==='admin')
+                            @if($item['type']==='circuit')
+                            <form method="POST" action="{{ route('circuits.destroy',$item['id']) }}"
+                                  onsubmit="return confirm('Supprimer ce passage ?')">
+                                @csrf @method('DELETE')
+                                <button class="btn btn-sm btn-outline-danger py-0 px-1"><i class="bi bi-trash" style="font-size:.75rem"></i></button>
+                            </form>
+                            @else
+                            <a href="{{ route('factures.edit',$item['id']) }}" class="btn btn-sm btn-outline-secondary py-0 px-1"><i class="bi bi-pencil" style="font-size:.75rem"></i></a>
+                            <form method="POST" action="{{ route('factures.destroy',$item['id']) }}"
+                                  onsubmit="return confirm('Supprimer cette facture ?')">
+                                @csrf @method('DELETE')
+                                <button class="btn btn-sm btn-outline-danger py-0 px-1"><i class="bi bi-trash" style="font-size:.75rem"></i></button>
+                            </form>
+                            @endif
                         @endif
                     </div>
                 </div>
-                <div style="font-size:.84rem;color:var(--text);margin-top:2px">{{ $item['detail'] }}</div>
-                <div style="font-size:.76rem;color:#bbb;margin-top:2px"><i class="bi bi-person me-1"></i>{{ $item['agent'] }}</div>
+
+                {{-- Affichage détaillé selon le type --}}
+                @if($item['type']==='circuit')
+                    <div style="font-size:.84rem;color:var(--text);margin-top:6px">
+                        {{ $item['detail'] }}
+                    </div>
+                @else
+                    {{-- Affichage détaillé de la facture --}}
+                    @php $facture = $item['data']; @endphp
+                    <div style="margin-top:8px;">
+                        <div style="background:#F9FAFB;border-radius:8px;padding:10px;font-size:.8rem;">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <div><span style="color:var(--muted)">N° reçu:</span> <strong>{{ $facture->numero_facture }}</strong></div>
+                                    <div><span style="color:var(--muted)">Date facture:</span> {{ $facture->date_facture->format('d/m/Y') }}</div>
+                                    <div><span style="color:var(--muted)">Service:</span> {{ $facture->service->nom_service ?? '—' }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div><span style="color:var(--muted)">Montant total:</span> <strong>{{ number_format($facture->montant, 0, ',', ' ') }} FCFA</strong></div>
+                                    @if($facture->has_p_e_c)
+                                        <div><span style="color:var(--green)">Prise en charge:</span>
+                                            <strong>{{ number_format($facture->pec_montant, 0, ',', ' ') }} FCFA</strong>
+                                            <span style="font-size:.72rem;color:var(--muted)">({{ $facture->pec_organisme }})</span>
+                                        </div>
+                                        <div><span style="color:var(--blue)">Solde patient:</span>
+                                            <strong style="color:var(--blue)">{{ number_format($facture->montant_patient, 0, ',', ' ') }} FCFA</strong>
+                                        </div>
+                                    @else
+                                        <div><span style="color:var(--green)">À charge patient:</span>
+                                            <strong style="color:var(--green)">{{ number_format($facture->montant, 0, ',', ' ') }} FCFA</strong>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                            <div style="margin-top:6px;font-size:.72rem;color:var(--muted);border-top:1px solid #e5e7eb;padding-top:6px">
+                                <i class="bi bi-person me-1"></i>Enregistré par: {{ $facture->user->prenom ?? '' }} {{ $facture->user->nom ?? '' }}
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <div style="font-size:.76rem;color:#bbb;margin-top:4px">
+                    <i class="bi bi-person me-1"></i>{{ $item['agent'] }}
+                </div>
             </div>
         </div>
         @empty
@@ -119,4 +174,23 @@
         @endforelse
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+// Ajouter un peu d'interactivité si besoin
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation légère au survol
+    const histItems = document.querySelectorAll('.hist-item');
+    histItems.forEach(item => {
+        item.style.transition = 'all 0.2s ease';
+        item.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateX(4px)';
+        });
+        item.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateX(0)';
+        });
+    });
+});
+</script>
 @endsection

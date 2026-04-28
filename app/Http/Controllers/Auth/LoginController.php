@@ -30,14 +30,27 @@ class LoginController extends Controller
             'password.min'      => 'Au moins 6 caractères requis.',
         ]);
 
-        if (Auth::attempt($request->only('email','password'), $request->boolean('remember'))) {
+        $credentials = $request->only('email', 'password');
+
+        // Vérifier d'abord si l'utilisateur existe et est approuvé
+        $user = User::where('email', $credentials['email'])->first();
+
+        if ($user) {
+            if (!$user->approved) {
+                return back()
+                    ->withInput($request->only('email', 'remember'))
+                    ->withErrors(['email' => 'Votre compte est en attente de validation par l\'administrateur.']);
+            }
+        }
+
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
             return redirect()->intended(route('dashboard'))
                              ->with('success', 'Bienvenue, ' . Auth::user()->prenom . ' !');
         }
 
         return back()
-            ->withInput($request->only('email','remember'))
+            ->withInput($request->only('email', 'remember'))
             ->withErrors(['email' => 'Email ou mot de passe incorrect.']);
     }
 
@@ -48,7 +61,7 @@ class LoginController extends Controller
         return view('auth.register');
     }
 
-    // ── Traitement inscription → redirige vers LOGIN (pas dashboard) ─────
+    // ── Traitement inscription → redirige vers LOGIN avec message validation ──
     public function register(Request $request)
     {
         $request->validate([
@@ -75,11 +88,12 @@ class LoginController extends Controller
             'email'    => strtolower(trim($request->email)),
             'password' => Hash::make($request->password),
             'role'     => 'user',
+            'approved' => false, // En attente de validation
         ]);
 
-        // ✅ Redirige vers la PAGE DE CONNEXION (pas le dashboard)
+        // Redirige vers la page de connexion avec message d'attente
         return redirect()->route('login')
-                         ->with('status', 'Compte créé avec succès ! Connectez-vous maintenant.');
+                         ->with('status', 'Votre compte a été créé. En attente de validation par l\'administrateur.');
     }
 
     // ── Déconnexion ──────────────────────────────────────────────────────

@@ -49,32 +49,22 @@ class PasswordResetController extends Controller
             'updated_at' => Carbon::now(),
         ]);
 
-        // LOG DE DÉBOGAGE - Affiche le code dans les logs (À SUPPRIMER EN PRODUCTION)
+        // LOG DE DÉBOGAGE - Affiche le code dans les logs (uniquement visible par admin via storage/logs)
         Log::info("Code de réinitialisation pour {$email} : {$code}");
 
-        // Pour le développement : stocker le code en session pour l'afficher dans la vue
-        session(['debug_code' => $code]);
-
-        // Envoyer l'email avec le code (uniquement si configuré pour l'envoi réel)
+        // Envoyer l'email avec le code
         try {
             Mail::send('auth.emails.reset-code', ['code' => $code], function ($m) use ($email) {
                 $m->to($email)
                   ->subject('CHUD B/A — Code de réinitialisation de mot de passe');
             });
 
-            // Vérifier si l'email a bien été envoyé (pour le driver log)
             if (config('mail.default') === 'log') {
                 Log::info("Email écrit dans les logs storage/logs/laravel.log");
             }
         } catch (\Exception $e) {
-            // En cas d'erreur d'envoi, on log l'erreur mais on continue (mode développement)
             Log::error("Erreur d'envoi d'email : " . $e->getMessage());
-
-            // En mode développement, on avertit l'utilisateur
-            if (config('app.debug')) {
-                return back()->with('warning', "Mode développement : Impossible d'envoyer l'email. Code: {$code}")
-                             ->with('debug_code', $code);
-            }
+            return back()->with('error', "Impossible d'envoyer l'email. Vérifiez la configuration mail.");
         }
 
         // Stocker l'email en session pour les étapes suivantes
@@ -97,12 +87,8 @@ class PasswordResetController extends Controller
                              ->with('error', 'Veuillez d\'abord entrer votre email.');
         }
 
-        // Récupérer le code de débogage s'il existe
-        $debugCode = session('debug_code');
-
         return view('auth.forgot-code', [
-            'email' => session('reset_email'),
-            'debug_code' => $debugCode
+            'email' => session('reset_email')
         ]);
     }
 
@@ -128,11 +114,7 @@ class PasswordResetController extends Controller
                     ->first();
 
         if (!$record) {
-            // En mode développement, proposer d'afficher le code
-            if (config('app.debug') && session('debug_code')) {
-                return back()->withErrors(['code' => 'Code incorrect. Code de débogage : ' . session('debug_code')]);
-            }
-            return back()->withErrors(['code' => 'Code incorrect. Vérifiez votre email.']);
+            return back()->withErrors(['code' => 'Code incorrect. Vérifiez votre boîte email.']);
         }
 
         if (Carbon::parse($record->expires_at)->isPast()) {
@@ -147,9 +129,6 @@ class PasswordResetController extends Controller
 
         // Stocker la validation en session
         session(['reset_verified' => true]);
-
-        // Supprimer le code de débogage
-        session()->forget('debug_code');
 
         return redirect()->route('password.new-password')
                          ->with('status', 'Code vérifié ! Choisissez votre nouveau mot de passe.');
@@ -176,9 +155,7 @@ class PasswordResetController extends Controller
             'updated_at' => Carbon::now(),
         ]);
 
-        // Log et session de débogage
         Log::info("Nouveau code de réinitialisation pour {$email} : {$code}");
-        session(['debug_code' => $code]);
 
         try {
             Mail::send('auth.emails.reset-code', ['code' => $code], function ($m) use ($email) {
@@ -187,10 +164,7 @@ class PasswordResetController extends Controller
             });
         } catch (\Exception $e) {
             Log::error("Erreur d'envoi d'email : " . $e->getMessage());
-            if (config('app.debug')) {
-                return back()->with('warning', "Mode développement : Nouveau code: {$code}")
-                             ->with('debug_code', $code);
-            }
+            return back()->with('error', "Impossible d'envoyer l'email.");
         }
 
         return back()->with('status', 'Nouveau code envoyé à ' . $email);
@@ -239,7 +213,7 @@ class PasswordResetController extends Controller
         $user->update(['password' => Hash::make($request->password)]);
 
         // Nettoyer complètement la session
-        session()->forget(['reset_email', 'reset_verified', 'debug_code']);
+        session()->forget(['reset_email', 'reset_verified']);
 
         // Supprimer tous les codes utilisés pour cet email
         DB::table('password_reset_codes')->where('email', $email)->delete();

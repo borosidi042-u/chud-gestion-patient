@@ -20,14 +20,11 @@ Route::get('/register', [LoginController::class,'showRegisterForm'])->name('regi
 Route::post('/register',[LoginController::class,'register']);
 
 // ── Mot de passe oublié — 3 étapes ──────────────────────────────────────
-// Étape 1 : email
 Route::get('/mot-de-passe-oublie',  [PasswordResetController::class,'showEmailForm'])->name('password.request');
 Route::post('/mot-de-passe-oublie', [PasswordResetController::class,'sendCode'])->name('password.send-code');
-// Étape 2 : code
 Route::get('/verification-code',    [PasswordResetController::class,'showCodeForm'])->name('password.verify-code');
 Route::post('/verification-code',   [PasswordResetController::class,'verifyCode']);
 Route::post('/renvoyer-code',       [PasswordResetController::class,'resendCode'])->name('password.resend-code');
-// Étape 3 : nouveau mot de passe
 Route::get('/nouveau-mot-de-passe', [PasswordResetController::class,'showNewPasswordForm'])->name('password.new-password');
 Route::post('/nouveau-mot-de-passe',[PasswordResetController::class,'updatePassword'])->name('password.update-new');
 
@@ -58,17 +55,26 @@ Route::middleware('auth')->group(function () {
     Route::get('/factures/{facture}/modifier', [FactureController::class,'edit'])  ->name('factures.edit');
     Route::put('/factures/{facture}',          [FactureController::class,'update'])->name('factures.update');
     Route::delete('/factures/{facture}',       [FactureController::class,'destroy'])->name('factures.destroy');
+    
+    Route::get('/factures/{facture}/preview',  [FactureController::class, 'preview'])->name('factures.preview');
+    Route::get('/factures/{facture}/download', [FactureController::class, 'download'])->name('factures.download');
 
     // Circuits
     Route::get('/circuits/nouveau',      [CircuitController::class,'create']) ->name('circuits.create');
     Route::post('/circuits',             [CircuitController::class,'store'])  ->name('circuits.store');
     Route::delete('/circuits/{circuit}', [CircuitController::class,'destroy'])->name('circuits.destroy');
 
-    // Administration
+    // ── Administration (vérification manuelle du rôle admin) ─────────────────
     Route::prefix('admin')->name('admin.')->group(function () {
-        Route::get('/utilisateurs',                [UserController::class,'index'])       ->name('users.index');
-        Route::post('/utilisateurs/{id}/role',     [UserController::class,'changerRole']) ->name('users.role');
-        Route::delete('/utilisateurs/{id}',        [UserController::class,'destroy'])     ->name('users.destroy');
+        
+        // Gestion des utilisateurs - avec vérification manuelle dans le contrôleur
+        Route::get('/utilisateurs',                [UserController::class,'index'])        ->name('users.index');
+        Route::post('/utilisateurs/{id}/approuver', [UserController::class,'approve'])     ->name('users.approve');
+        Route::post('/utilisateurs/{id}/desapprouver', [UserController::class,'disapprove'])->name('users.disapprove');
+        Route::post('/utilisateurs/{id}/role',     [UserController::class,'changerRole'])  ->name('users.role');
+        Route::delete('/utilisateurs/{id}',        [UserController::class,'destroy'])      ->name('users.destroy');
+        
+        // Gestion des services
         Route::get('/services',                    [ServiceController::class,'index'])    ->name('services.index');
         Route::get('/services/nouveau',            [ServiceController::class,'create'])   ->name('services.create');
         Route::post('/services',                   [ServiceController::class,'store'])    ->name('services.store');

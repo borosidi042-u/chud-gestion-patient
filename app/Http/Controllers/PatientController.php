@@ -78,21 +78,48 @@ class PatientController extends Controller
     // ── Détail / Historique ──────────────────────────────────────────────
     public function show(Patient $patient)
     {
-        $patient->load(['factures.service','factures.user','circuits.service','circuits.user']);
+        $patient->load(['user', 'circuits', 'factures']);
+
+        // Historique combiné
         $historique = collect();
-        foreach ($patient->circuits as $c) {
-            $historique->push(['type'=>'circuit','date'=>$c->created_at,
-                'service'=>$c->service->nom_service??'—','detail'=>'Passage enregistré',
-                'agent'=>$c->user->prenom.' '.$c->user->nom,'id'=>$c->id]);
+
+        // Ajouter les circuits
+        foreach ($patient->circuits as $circuit) {
+            $historique->push([
+                'type' => 'circuit',
+                'id' => $circuit->id,
+                'service' => $circuit->service->nom_service ?? 'Service',
+                'detail' => $circuit->description ?? 'Passage enregistré',
+                'date' => $circuit->created_at,
+                'agent' => ($circuit->user->prenom ?? '') . ' ' . ($circuit->user->nom ?? ''),
+                'data' => $circuit
+            ]);
         }
-        foreach ($patient->factures as $f) {
-            $historique->push(['type'=>'facture','date'=>$f->created_at,
-                'service'=>$f->service->nom_service??'—',
-                'detail'=>'Facture N°'.$f->numero_facture.' — '.number_format($f->montant,0,',',' ').' FCFA',
-                'agent'=>$f->user->prenom.' '.$f->user->nom,'id'=>$f->id]);
+
+        // Ajouter les factures
+        foreach ($patient->factures as $facture) {
+            $detail = "Facture N° " . $facture->numero_facture . " - ";
+            $detail .= "Montant: " . number_format($facture->montant, 0, ',', ' ') . " FCFA";
+
+            if ($facture->has_p_e_c) {
+                $detail .= " | Prise en charge: " . $facture->pec_organisme . " (" . number_format($facture->pec_montant, 0, ',', ' ') . " FCFA)";
+                $detail .= " | Solde patient: " . number_format($facture->montant_patient, 0, ',', ' ') . " FCFA";
+            }
+
+            $historique->push([
+                'type' => 'facture',
+                'id' => $facture->id,
+                'service' => $facture->service->nom_service ?? 'Service',
+                'detail' => $detail,
+                'date' => $facture->created_at,
+                'agent' => ($facture->user->prenom ?? '') . ' ' . ($facture->user->nom ?? ''),
+                'data' => $facture
+            ]);
         }
+
         $historique = $historique->sortByDesc('date');
-        return view('patients.show', compact('patient','historique'));
+
+        return view('patients.show', compact('patient', 'historique'));
     }
 
     // ── Formulaire modification ──────────────────────────────────────────

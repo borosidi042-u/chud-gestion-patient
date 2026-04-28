@@ -7,6 +7,7 @@ use App\Models\Patient;
 use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class FactureController extends Controller
 {
@@ -136,6 +137,23 @@ class FactureController extends Controller
         $pid = $facture->patient_id;
         $facture->delete();
         return redirect()->route('patients.show',$pid)->with('success','Facture supprimée.');
+    }
+
+    // ── Aperçu PDF ───────────────────────────────────────────────────────
+    public function preview(Facture $facture)
+    {
+        $facture->load(['patient', 'service', 'user']);
+        return view('factures.preview', compact('facture'));
+    }
+
+    // ── Télécharger PDF ───────────────────────────────────────────────────
+    public function download(Facture $facture)
+    {
+        $facture->load(['patient', 'service', 'user']);
+        $pdf = Pdf::loadView('factures.pdf', compact('facture'));
+        $pdf->setPaper('A4', 'portrait');
+
+        return $pdf->download('facture_' . $facture->numero_facture . '_' . date('Ymd') . '.pdf');
     }
 
     private function checkAdmin()
