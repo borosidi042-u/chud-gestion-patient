@@ -14,7 +14,7 @@ class ServiceController extends Controller
         if (Auth::user()->role !== 'admin') {
             abort(403, 'Réservé à l\'administrateur.');
         }
-        
+
         $services = Service::withCount(['circuits', 'factures'])->orderBy('nom_service')->get();
         return view('admin.services.index', compact('services'));
     }
@@ -24,7 +24,7 @@ class ServiceController extends Controller
         if (Auth::user()->role !== 'admin') {
             abort(403, 'Réservé à l\'administrateur.');
         }
-        
+
         return view('admin.services.create');
     }
 
@@ -33,21 +33,36 @@ class ServiceController extends Controller
         if (Auth::user()->role !== 'admin') {
             abort(403, 'Réservé à l\'administrateur.');
         }
-        
+
         $request->validate([
-            'nom_service' => ['required', 'string', 'max:100',
-                              'regex:/^[\p{L}0-9\s\-\']+$/u',
-                              'unique:services,nom_service'],
-            'description' => ['nullable', 'string', 'max:255'],
+            'nom_service' => [
+                'required',
+                'string',
+                'max:100',
+                'regex:/^[\p{L}0-9\s\-\']+$/u',
+                'unique:services,nom_service',
+                function ($attribute, $value, $fail) {
+                    // Vérifier que le nom n'est pas composé uniquement de chiffres
+                    if (preg_match('/^\d+$/', trim($value))) {
+                        $fail('Le nom du service ne peut pas être composé uniquement de chiffres.');
+                    }
+                    // Vérifier qu'il y a au moins une lettre
+                    if (!preg_match('/[\p{L}]/u', trim($value))) {
+                        $fail('Le nom du service doit contenir au moins une lettre.');
+                    }
+                },
+            ],
+            'description' => ['nullable', 'string', 'max:500'], // Augmenté à 500 caractères
         ], [
             'nom_service.required' => 'Le nom du service est obligatoire.',
-            'nom_service.regex'    => 'Le nom ne doit contenir que des lettres, chiffres ou tirets.',
+            'nom_service.regex'    => 'Le nom ne doit contenir que des lettres, chiffres, espaces ou tirets.',
             'nom_service.unique'   => 'Ce service existe déjà.',
+            'description.max'      => 'La description ne peut pas dépasser 500 caractères.',
         ]);
 
         Service::create([
             'nom_service' => trim($request->nom_service),
-            'description' => $request->description,
+            'description' => trim($request->description),
         ]);
 
         return redirect()->route('admin.services.index')
@@ -59,7 +74,7 @@ class ServiceController extends Controller
         if (Auth::user()->role !== 'admin') {
             abort(403, 'Réservé à l\'administrateur.');
         }
-        
+
         return view('admin.services.edit', compact('service'));
     }
 
@@ -68,20 +83,35 @@ class ServiceController extends Controller
         if (Auth::user()->role !== 'admin') {
             abort(403, 'Réservé à l\'administrateur.');
         }
-        
+
         $request->validate([
-            'nom_service' => ['required', 'string', 'max:100',
-                              'regex:/^[\p{L}0-9\s\-\']+$/u',
-                              'unique:services,nom_service,' . $service->id],
-            'description' => ['nullable', 'string', 'max:255'],
+            'nom_service' => [
+                'required',
+                'string',
+                'max:100',
+                'regex:/^[\p{L}0-9\s\-\']+$/u',
+                'unique:services,nom_service,' . $service->id,
+                function ($attribute, $value, $fail) {
+                    // Vérifier que le nom n'est pas composé uniquement de chiffres
+                    if (preg_match('/^\d+$/', trim($value))) {
+                        $fail('Le nom du service ne peut pas être composé uniquement de chiffres.');
+                    }
+                    // Vérifier qu'il y a au moins une lettre
+                    if (!preg_match('/[\p{L}]/u', trim($value))) {
+                        $fail('Le nom du service doit contenir au moins une lettre.');
+                    }
+                },
+            ],
+            'description' => ['nullable', 'string', 'max:500'],
         ], [
-            'nom_service.regex'  => 'Nom invalide (lettres, chiffres, tirets uniquement).',
+            'nom_service.regex'  => 'Nom invalide (lettres, chiffres, espaces ou tirets uniquement).',
             'nom_service.unique' => 'Ce nom est déjà utilisé.',
+            'description.max'    => 'La description ne peut pas dépasser 500 caractères.',
         ]);
 
         $service->update([
             'nom_service' => trim($request->nom_service),
-            'description' => $request->description,
+            'description' => trim($request->description),
         ]);
 
         return redirect()->route('admin.services.index')->with('success', 'Service mis à jour.');
@@ -92,7 +122,7 @@ class ServiceController extends Controller
         if (Auth::user()->role !== 'admin') {
             abort(403, 'Réservé à l\'administrateur.');
         }
-        
+
         if ($service->circuits()->count() > 0 || $service->factures()->count() > 0) {
             return redirect()->route('admin.services.index')
                              ->with('error', 'Impossible : ce service est lié à des données existantes.');

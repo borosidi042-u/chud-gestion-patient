@@ -90,12 +90,13 @@
                     <div class="d-flex align-items-center gap-2">
                         <small style="color:var(--muted)">{{ \Carbon\Carbon::parse($item['date'])->format('d/m/Y H:i') }}</small>
                         @if($item['type']==='facture')
+                            {{-- Aperçu facture - reste dans le même onglet --}}
                             <a href="{{ route('factures.preview', $item['id']) }}"
                                class="btn btn-sm btn-outline-info py-0 px-1"
-                               target="_blank"
-                               title="Aperçu">
+                               title="Aperçu facture">
                                 <i class="bi bi-eye" style="font-size:.75rem"></i>
                             </a>
+                            {{-- Télécharger PDF --}}
                             <a href="{{ route('factures.download', $item['id']) }}"
                                class="btn btn-sm btn-outline-primary py-0 px-1"
                                title="Télécharger PDF">
@@ -174,23 +175,4 @@
         @endforelse
     </div>
 </div>
-@endsection
-
-@section('scripts')
-<script>
-// Ajouter un peu d'interactivité si besoin
-document.addEventListener('DOMContentLoaded', function() {
-    // Animation légère au survol
-    const histItems = document.querySelectorAll('.hist-item');
-    histItems.forEach(item => {
-        item.style.transition = 'all 0.2s ease';
-        item.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateX(4px)';
-        });
-        item.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateX(0)';
-        });
-    });
-});
-</script>
 @endsection

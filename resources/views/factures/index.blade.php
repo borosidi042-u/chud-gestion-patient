@@ -47,7 +47,7 @@
 <div class="card mb-3">
     <div class="card-body py-3 px-4">
         <div class="d-flex gap-2 flex-wrap align-items-center">
-            <div class="position-relative flex-grow-1" style="max-width:420px">
+            <div class="position-relative grow" style="max-width:420px">
                 <i class="bi bi-search position-absolute" style="left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.85rem"></i>
                 <input type="text" id="factureSearch" class="form-control"
                        style="padding-left:32px" value="{{ request('search') }}"
@@ -99,7 +99,7 @@
                 <td style="font-size:.85rem">{{ $f->service->nom_service ?? '—' }}</td>
                 <td class="text-end fw-bold" style="color:var(--green)">
                     {{ number_format($f->montant_patient,0,',',' ') }}
-                </td>
+                 </td>
                 <td class="text-end">
                     @if($f->has_p_e_c)
                     <div style="color:#2563EB;font-weight:600;font-size:.85rem">
@@ -111,15 +111,18 @@
                     @else
                     <span style="color:var(--muted);font-size:.82rem">—</span>
                     @endif
-                </td>
+                 </td>
 
                 <td class="text-end fw-semibold" style="color:var(--text)">
                     {{ number_format($f->montant,0,',',' ') }}
-                </td>
+                 </td>
                 <td style="font-size:.84rem">{{ $f->date_facture->format('d/m/Y') }}</td>
                 <td style="font-size:.78rem;color:var(--muted)">{{ $f->user->prenom??'' }} {{ $f->user->nom??'' }}</td>
                 <td class="text-end">
-                    <a href="{{ route('patients.show',$f->patient_id) }}" class="btn btn-sm btn-outline-primary me-1" title="Voir patient"><i class="bi bi-eye"></i></a>
+                    {{-- Bouton Voir (Aperçu facture) - reste dans le même onglet --}}
+                    <a href="{{ route('factures.preview', $f->id) }}" class="btn btn-sm btn-outline-info me-1" title="Aperçu facture">
+                        <i class="bi bi-eye"></i>
+                    </a>
                     @if(Auth::user()->role==='admin')
                     <a href="{{ route('factures.edit',$f) }}" class="btn btn-sm btn-outline-secondary me-1" title="Modifier"><i class="bi bi-pencil"></i></a>
                     <form method="POST" action="{{ route('factures.destroy',$f) }}" class="d-inline"
@@ -128,7 +131,7 @@
                         <button class="btn btn-sm btn-outline-danger" title="Supprimer"><i class="bi bi-trash"></i></button>
                     </form>
                     @endif
-                </td>
+                 </td>
             </tr>
             @endforeach
             </tbody>
@@ -147,10 +150,12 @@
 const fs=document.getElementById('factureSearch');
 const fh=document.getElementById('factureHidden');
 const fr=document.querySelectorAll('#factureBody tr');
-fs.addEventListener('input',function(){
-    const v=this.value.toLowerCase().trim();fh.value=this.value;
-    fr.forEach(r=>{r.style.display=v===''||r.innerText.toLowerCase().includes(v)?'':'none'});
-});
-document.getElementById('factureForm').addEventListener('submit',()=>{fh.value=fs.value});
+if(fs){
+    fs.addEventListener('input',function(){
+        const v=this.value.toLowerCase().trim();fh.value=this.value;
+        fr.forEach(r=>{r.style.display=v===''||r.innerText.toLowerCase().includes(v)?'':'none'});
+    });
+}
+document.getElementById('factureForm')?.addEventListener('submit',()=>{fh.value=fs.value});
 </script>
 @endsection

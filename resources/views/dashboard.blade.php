@@ -76,7 +76,7 @@
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-diagram-3-fill me-2" style="color:var(--green)"></i>Derniers passages</span>
-                <a href="{{ route('circuits.create') }}" class="btn btn-sm btn-outline-primary">Ajouter</a>
+                
             </div>
             <div class="card-body p-0">
                 @forelse($derniersCircuits as $c)
