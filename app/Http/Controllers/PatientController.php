@@ -8,10 +8,12 @@ use Illuminate\Support\Facades\Auth;
 
 class PatientController extends Controller
 {
-    // ── Liste + Recherche ────────────────────────────────────────────────
+    // ── Liste + Recherche + Filtre par période ────────────────────────────────
     public function index(Request $request)
     {
         $query = Patient::with('user')->latest();
+
+        // Filtre par recherche textuelle (nom, prénom, code, NPI, téléphone)
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
@@ -22,8 +24,24 @@ class PatientController extends Controller
                   ->orWhere('npi',        'LIKE','%'.$s.'%');
             });
         }
+
+        // Filtre par période (date_start et date_end)
+        if ($request->filled('date_start')) {
+            $dateStart = $request->date_start . ' 00:00:00';
+            $query->where('created_at', '>=', $dateStart);
+        }
+
+        if ($request->filled('date_end')) {
+            $dateEnd = $request->date_end . ' 23:59:59';
+            $query->where('created_at', '<=', $dateEnd);
+        }
+
         $patients = $query->paginate(15)->withQueryString();
-        return view('patients.index', compact('patients'));
+
+        // Total des patients pour la période sélectionnée
+        $totalPatients = $query->count();
+
+        return view('patients.index', compact('patients', 'totalPatients'));
     }
 
     // ── Formulaire création ──────────────────────────────────────────────

@@ -55,7 +55,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/factures/{facture}/modifier', [FactureController::class,'edit'])  ->name('factures.edit');
     Route::put('/factures/{facture}',          [FactureController::class,'update'])->name('factures.update');
     Route::delete('/factures/{facture}',       [FactureController::class,'destroy'])->name('factures.destroy');
-    
+
     Route::get('/factures/{facture}/preview',  [FactureController::class, 'preview'])->name('factures.preview');
     Route::get('/factures/{facture}/download', [FactureController::class, 'download'])->name('factures.download');
 
@@ -66,14 +66,20 @@ Route::middleware('auth')->group(function () {
 
     // ── Administration (vérification manuelle du rôle admin) ─────────────────
     Route::prefix('admin')->name('admin.')->group(function () {
-        
+
         // Gestion des utilisateurs - avec vérification manuelle dans le contrôleur
-        Route::get('/utilisateurs',                [UserController::class,'index'])        ->name('users.index');
-        Route::post('/utilisateurs/{id}/approuver', [UserController::class,'approve'])     ->name('users.approve');
-        Route::post('/utilisateurs/{id}/desapprouver', [UserController::class,'disapprove'])->name('users.disapprove');
-        Route::post('/utilisateurs/{id}/role',     [UserController::class,'changerRole'])  ->name('users.role');
-        Route::delete('/utilisateurs/{id}',        [UserController::class,'destroy'])      ->name('users.destroy');
-        
+        // Routes pour la gestion des utilisateurs (admin)
+
+        Route::get('/utilisateurs', [UserController::class, 'index'])->name('users.index');
+        Route::post('/utilisateurs/{id}/approuver', [UserController::class, 'approve'])->name('users.approve');
+        Route::post('/utilisateurs/{id}/desapprouver', [UserController::class, 'disapprove'])->name('users.disapprove');
+        Route::post('/utilisateurs/{id}/role', [UserController::class, 'changerRole'])->name('users.role');
+        Route::delete('/utilisateurs/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+
+        // Nouvelle route pour le transfert de données
+        Route::get('/utilisateurs/{id}/transfer', [UserController::class, 'showTransferForm'])->name('users.transfer.form');
+        Route::post('/utilisateurs/{id}/transfer', [UserController::class, 'transferData'])->name('users.transfer');
+
         // Gestion des services
         Route::get('/services',                    [ServiceController::class,'index'])    ->name('services.index');
         Route::get('/services/nouveau',            [ServiceController::class,'create'])   ->name('services.create');

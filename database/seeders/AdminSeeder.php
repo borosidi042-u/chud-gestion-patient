@@ -13,12 +13,13 @@ class AdminSeeder extends Seeder
         // Vérifier si l'admin existe déjà
         if (!User::where('email', 'admin@chud-ba.bj')->exists()) {
             User::create([
-                'nom'      => 'ADMINISTRATEUR',
-                'prenom'   => 'Chud',
-                'email'    => 'admin@chud-ba.bj',
-                'password' => Hash::make('Admin@2024'),
-                'role'     => 'admin',
-            ]);
+            'nom'      => 'ADMINISTRATEUR',
+            'prenom'   => 'Chud',
+            'email'    => 'admin@chud-ba.bj',
+            'password' => Hash::make('Admin@2024'),
+            'role'     => 'admin',
+            'approved' => true,   // ← INDISPENSABLE
+        ]);
             echo "✅ Compte admin créé : admin@chud-ba.bj / Admin@2024\n";
         } else {
             echo "ℹ️  Admin déjà existant.\n";

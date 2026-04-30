@@ -68,7 +68,7 @@
                         <td class="text-end">
                             <form method="POST" action="{{ route('admin.users.approve', $u->id) }}" class="d-inline">
                                 @csrf
-                                <button type="submit" class="btn btn-sm btn-success" 
+                                <button type="submit" class="btn btn-sm btn-success"
                                         onclick="return confirm('Valider l\'inscription de {{ $u->prenom }} {{ $u->nom }} ?')">
                                     <i class="bi bi-check-circle me-1"></i>Valider
                                 </button>
@@ -115,6 +115,12 @@
                 </thead>
                 <tbody id="userTableBody">
                     @foreach($approvedUsers as $u)
+                    @php
+                        // Compter les données liées à cet utilisateur
+                        $userFacturesCount = $u->factures()->count();
+                        $userCircuitsCount = $u->circuits()->count();
+                        $hasData = ($userFacturesCount > 0 || $userCircuitsCount > 0);
+                    @endphp
                     <tr>
                         <td>
                             <div class="d-flex align-items-center gap-2">
@@ -156,7 +162,7 @@
                                 @if($u->approved)
                                 <form method="POST" action="{{ route('admin.users.disapprove', $u->id) }}" class="d-inline">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-outline-warning" 
+                                    <button type="submit" class="btn btn-sm btn-outline-warning"
                                             onclick="return confirm('Désactiver le compte de {{ $u->prenom }} {{ $u->nom }} ?')"
                                             title="Désactiver le compte">
                                         <i class="bi bi-ban me-1"></i>Désactiver
@@ -165,7 +171,7 @@
                                 @else
                                 <form method="POST" action="{{ route('admin.users.approve', $u->id) }}" class="d-inline">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-outline-success" 
+                                    <button type="submit" class="btn btn-sm btn-outline-success"
                                             onclick="return confirm('Activer le compte de {{ $u->prenom }} {{ $u->nom }} ?')"
                                             title="Activer le compte">
                                         <i class="bi bi-check-circle me-1"></i>Activer
@@ -186,14 +192,22 @@
                                     </button>
                                 </form>
 
-                                {{-- Supprimer --}}
-                                <form method="POST" action="{{ route('admin.users.destroy', $u->id) }}" class="d-inline"
-                                      onsubmit="return confirm('Supprimer définitivement le compte de {{ $u->prenom }} {{ $u->nom }} ?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
+                                {{-- Supprimer ou Transférer --}}
+                                @if($hasData)
+                                    <a href="{{ route('admin.users.transfer.form', $u->id) }}"
+                                       class="btn btn-sm btn-outline-warning"
+                                       title="Ce compte a {{ $userFacturesCount }} facture(s) et {{ $userCircuitsCount }} passage(s). Transférer avant suppression">
+                                        <i class="bi bi-shuffle me-1"></i>Transférer
+                                    </a>
+                                @else
+                                    <form method="POST" action="{{ route('admin.users.destroy', $u->id) }}" class="d-inline"
+                                          onsubmit="return confirm('Supprimer définitivement le compte de {{ $u->prenom }} {{ $u->nom }} ?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                             @else
                             <span style="font-size:.78rem;color:var(--muted)">—</span>

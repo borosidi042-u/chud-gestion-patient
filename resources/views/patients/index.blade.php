@@ -51,6 +51,57 @@
     </div>
 </div>
 
+<div class="card mb-3">
+    <div class="card-body py-3 px-4">
+        <form method="GET" id="filterForm" novalidate>
+            <div class="row g-3 align-items-end">
+                {{-- Date début --}}
+                <div class="col-md-3">
+                    <label class="form-label" style="font-size:.8rem">Du (date d'enregistrement)</label>
+                    <input type="date" name="date_start" id="dateStart" class="form-control"
+                           value="{{ request('date_start') }}" max="{{ date('Y-m-d') }}">
+                </div>
+
+                {{-- Date fin --}}
+                <div class="col-md-3">
+                    <label class="form-label" style="font-size:.8rem">Au (date d'enregistrement)</label>
+                    <input type="date" name="date_end" id="dateEnd" class="form-control"
+                           value="{{ request('date_end') }}" max="{{ date('Y-m-d') }}">
+                </div>
+
+                {{-- Boutons --}}
+                <div class="col-md-2">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-funnel me-1"></i>Filtrer
+                        </button>
+                        @if(request('search') || request('date_start') || request('date_end'))
+                        <a href="{{ route('patients.index') }}" class="btn btn-outline-secondary" title="Effacer les filtres">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        {{-- Affichage des filtres actifs --}}
+        @if(request('date_start') || request('date_end'))
+        <div class="mt-2 pt-2" style="border-top:1px solid #e5e7eb">
+            <span style="font-size:.75rem;color:var(--muted)">
+                <i class="bi bi-info-circle me-1"></i>
+                @if(request('date_start') && request('date_end'))
+                    Période d'enregistrement : du {{ \Carbon\Carbon::parse(request('date_start'))->format('d/m/Y') }} au {{ \Carbon\Carbon::parse(request('date_end'))->format('d/m/Y') }}
+                @elseif(request('date_start'))
+                    À partir du {{ \Carbon\Carbon::parse(request('date_start'))->format('d/m/Y') }}
+                @elseif(request('date_end'))
+                    Jusqu'au {{ \Carbon\Carbon::parse(request('date_end'))->format('d/m/Y') }}
+                @endif
+            </span>
+        </div>
+        @endif
+    </div>
+</div>
 <div class="card">
     <div class="card-body p-0">
         @if($patients->isEmpty())
