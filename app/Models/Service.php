@@ -6,8 +6,31 @@ use Illuminate\Database\Eloquent\Model;
 
 class Service extends Model
 {
-    protected $fillable = ['nom_service', 'description'];
+    protected $fillable = [
+        'nom_service', 'description', 'is_active'
+    ];
 
-    public function circuits()  { return $this->hasMany(Circuit::class); }
-    public function factures()  { return $this->hasMany(Facture::class); }
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public function circuits()
+    {
+        return $this->hasMany(Circuit::class);
+    }
+
+    public function factures()
+    {
+        return $this->hasMany(Facture::class);
+    }
+
+    public function salles()
+    {
+        return $this->hasMany(Salle::class);
+    }
+
+    public function mouvements()
+    {
+        return $this->hasMany(Mouvement::class);
+    }
 }

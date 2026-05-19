@@ -23,25 +23,45 @@ class User extends Authenticatable
         'approved' => 'boolean',
     ];
 
-    // Accesseur pour le nom complet
     public function getFullNameAttribute()
     {
         return $this->prenom . ' ' . $this->nom;
     }
 
-    // Relation avec les factures
+    public function getRoleLabelAttribute()
+    {
+        return match($this->role) {
+            'admin' => 'Administrateur',
+            'infirmier' => 'Infirmier',
+            default => 'Agent d\'accueil',
+        };
+    }
+
     public function factures()
     {
         return $this->hasMany(Facture::class);
     }
 
-    // Relation avec les circuits
     public function circuits()
     {
         return $this->hasMany(Circuit::class);
     }
 
-    // Vérifier si l'utilisateur est approuvé
+    public function patients()
+    {
+        return $this->hasMany(Patient::class);
+    }
+
+    public function mouvements()
+    {
+        return $this->hasMany(Mouvement::class, 'agent_id');
+    }
+
+    public function visitesValidees()
+    {
+        return $this->hasMany(Visite::class, 'validated_by');
+    }
+
     public function isApproved()
     {
         return $this->approved;

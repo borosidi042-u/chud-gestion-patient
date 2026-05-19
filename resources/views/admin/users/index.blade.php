@@ -141,10 +141,28 @@
                         <td style="color:var(--muted);font-size:.85rem">{{ $u->email }}</td>
                         <td>
                             <span style="border-radius:20px;padding:4px 12px;font-size:.72rem;font-weight:600;
-                                background:{{ $u->role==='admin' ? 'var(--red-l)' : 'var(--blue-l)' }};
-                                color:{{ $u->role==='admin' ? 'var(--red)' : 'var(--blue)' }}">
-                                <i class="bi {{ $u->role==='admin' ? 'bi-shield-fill' : 'bi-person-fill' }} me-1"></i>
-                                {{ $u->role==='admin' ? 'Administrateur' : "Agent d'accueil" }}
+                                background:
+                                    @if($u->role === 'admin') var(--red-l)
+                                    @elseif($u->role === 'infirmier') #E0E7FF
+                                    @else var(--blue-l)
+                                    @endif;
+                                color:
+                                    @if($u->role === 'admin') var(--red)
+                                    @elseif($u->role === 'infirmier') #4F46E5
+                                    @else var(--blue)
+                                    @endif">
+                                <i class="bi
+                                    @if($u->role === 'admin') bi-shield-fill
+                                    @elseif($u->role === 'infirmier') bi-hospital-fill
+                                    @else bi-person-fill
+                                    @endif me-1"></i>
+                                @if($u->role === 'admin')
+                                    Administrateur
+                                @elseif($u->role === 'infirmier')
+                                    Infirmier
+                                @else
+                                    Agent d'accueil
+                                @endif
                             </span>
                         </td>
                         <td>

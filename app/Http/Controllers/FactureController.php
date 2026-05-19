@@ -51,7 +51,6 @@ class FactureController extends Controller
             'montant'        => ['required','numeric','min:1','max:99999999'],
             'date_facture'   => ['required','date','before_or_equal:today'],
             'service_id'     => ['required','exists:services,id'],
-            // Prise en charge — facultative
             'pec_organisme'  => ['nullable','string','max:150'],
             'pec_montant'    => ['nullable','numeric','min:0','max:99999999'],
         ],[
@@ -65,7 +64,6 @@ class FactureController extends Controller
             'pec_montant.min'              => 'Le montant de prise en charge ne peut pas être négatif.',
         ]);
 
-        // Vérification : pec_montant ne doit pas dépasser le montant total
         $pec = $request->pec_montant ? floatval($request->pec_montant) : null;
         if ($pec && $pec > floatval($request->montant)) {
             return back()->withErrors(['pec_montant'=>'La prise en charge ne peut pas dépasser le montant total.'])

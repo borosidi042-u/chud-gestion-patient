@@ -7,9 +7,11 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\FactureController;
 use App\Http\Controllers\CircuitController;
+use App\Http\Controllers\LitController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\SalleController;
 
 Route::get('/', fn() => redirect()->route('login'));
 
@@ -48,44 +50,60 @@ Route::middleware('auth')->group(function () {
     Route::put('/patients/{patient}',          [PatientController::class,'update'])->name('patients.update');
     Route::delete('/patients/{patient}',       [PatientController::class,'destroy'])->name('patients.destroy');
 
-    // Factures
-    Route::get('/factures',                    [FactureController::class,'index']) ->name('factures.index');
-    Route::get('/factures/nouvelle',           [FactureController::class,'create'])->name('factures.create');
-    Route::post('/factures',                   [FactureController::class,'store']) ->name('factures.store');
-    Route::get('/factures/{facture}/modifier', [FactureController::class,'edit'])  ->name('factures.edit');
-    Route::put('/factures/{facture}',          [FactureController::class,'update'])->name('factures.update');
-    Route::delete('/factures/{facture}',       [FactureController::class,'destroy'])->name('factures.destroy');
+    // API Patient
+    Route::get('/api/patients/{id}', [PatientController::class, 'apiShow'])->name('api.patients.show');
 
-    Route::get('/factures/{facture}/preview',  [FactureController::class, 'preview'])->name('factures.preview');
-    Route::get('/factures/{facture}/download', [FactureController::class, 'download'])->name('factures.download');
+    // Mouvements (Circuits)
+    Route::get('/circuits/create',                  [CircuitController::class, 'create'])->name('circuits.create');
+    Route::get('/circuits/lits-disponibles',        [CircuitController::class, 'getLitsDisponibles'])->name('circuits.lits');
+    Route::post('/mouvements/passage',              [CircuitController::class, 'storePassage'])->name('mouvements.passage');
+    Route::post('/mouvements/admission',            [CircuitController::class, 'storeAdmission'])->name('mouvements.admission');
+    Route::post('/mouvements/transfert',            [CircuitController::class, 'storeTransfert'])->name('mouvements.transfert');
+    Route::post('/mouvements/sortie',               [CircuitController::class, 'storeSortie'])->name('mouvements.sortie');
+    Route::get('/circuits/{circuit}/modifier', [CircuitController::class, 'edit'])->name('circuits.edit');
+    Route::put('/circuits/{circuit}',               [CircuitController::class, 'update'])->name('circuits.update');
+    Route::delete('/circuits/{circuit}',            [CircuitController::class, 'destroy'])->name('circuits.destroy');
 
-    // Circuits
-    Route::get('/circuits/nouveau',      [CircuitController::class,'create']) ->name('circuits.create');
-    Route::post('/circuits',             [CircuitController::class,'store'])  ->name('circuits.store');
-    Route::delete('/circuits/{circuit}', [CircuitController::class,'destroy'])->name('circuits.destroy');
+    // Lits (consultation pour tous)
+    Route::get('/lits', [LitController::class, 'index'])->name('lits.index');
 
-    // ── Administration (vérification manuelle du rôle admin) ─────────────────
+    // Transfert de lit (admin)
+    Route::get('/lits/transfert', [LitController::class, 'transfertForm'])->name('lits.transfert.form');
+    Route::post('/lits/transfert', [LitController::class, 'transfertLit'])->name('lits.transfert');
+
+    // Administration
     Route::prefix('admin')->name('admin.')->group(function () {
+        // Utilisateurs
+        Route::get('/utilisateurs',                [UserController::class,'index'])        ->name('users.index');
+        Route::post('/utilisateurs/{id}/approuver', [UserController::class,'approve'])     ->name('users.approve');
+        Route::post('/utilisateurs/{id}/desapprouver', [UserController::class,'disapprove'])->name('users.disapprove');
+        Route::post('/utilisateurs/{id}/role',     [UserController::class,'changerRole'])  ->name('users.role');
+        Route::delete('/utilisateurs/{id}',        [UserController::class,'destroy'])      ->name('users.destroy');
+        Route::get('/utilisateurs/{id}/transfer',  [UserController::class,'showTransferForm'])->name('users.transfer.form');
+        Route::post('/utilisateurs/{id}/transfer', [UserController::class,'transferData'])->name('users.transfer');
 
-        // Gestion des utilisateurs - avec vérification manuelle dans le contrôleur
-        // Routes pour la gestion des utilisateurs (admin)
-
-        Route::get('/utilisateurs', [UserController::class, 'index'])->name('users.index');
-        Route::post('/utilisateurs/{id}/approuver', [UserController::class, 'approve'])->name('users.approve');
-        Route::post('/utilisateurs/{id}/desapprouver', [UserController::class, 'disapprove'])->name('users.disapprove');
-        Route::post('/utilisateurs/{id}/role', [UserController::class, 'changerRole'])->name('users.role');
-        Route::delete('/utilisateurs/{id}', [UserController::class, 'destroy'])->name('users.destroy');
-
-        // Nouvelle route pour le transfert de données
-        Route::get('/utilisateurs/{id}/transfer', [UserController::class, 'showTransferForm'])->name('users.transfer.form');
-        Route::post('/utilisateurs/{id}/transfer', [UserController::class, 'transferData'])->name('users.transfer');
-
-        // Gestion des services
+        // Services
         Route::get('/services',                    [ServiceController::class,'index'])    ->name('services.index');
         Route::get('/services/nouveau',            [ServiceController::class,'create'])   ->name('services.create');
         Route::post('/services',                   [ServiceController::class,'store'])    ->name('services.store');
         Route::get('/services/{service}/modifier', [ServiceController::class,'edit'])     ->name('services.edit');
         Route::put('/services/{service}',          [ServiceController::class,'update'])   ->name('services.update');
         Route::delete('/services/{service}',       [ServiceController::class,'destroy'])  ->name('services.destroy');
+
+        // Salles
+        Route::get('/salles',                      [SalleController::class,'index'])->name('salles.index');
+        Route::get('/salles/nouveau',              [SalleController::class,'create'])->name('salles.create');
+        Route::post('/salles',                     [SalleController::class,'store'])->name('salles.store');
+        Route::get('/salles/{salle}/modifier',     [SalleController::class,'edit'])->name('salles.edit');
+        Route::put('/salles/{salle}',              [SalleController::class,'update'])->name('salles.update');
+        Route::delete('/salles/{salle}',           [SalleController::class,'destroy'])->name('salles.destroy');
+
+        // Lits (CRUD admin)
+        Route::get('/lits/nouveau',                [LitController::class,'create'])->name('lits.create');
+        Route::post('/lits',                       [LitController::class,'store'])->name('lits.store');
+        Route::get('/lits/{lit}/modifier',         [LitController::class,'edit'])->name('lits.edit');
+        Route::put('/lits/{lit}',                  [LitController::class,'update'])->name('lits.update');
+        Route::delete('/lits/{lit}',               [LitController::class,'destroy'])->name('lits.destroy');
+        Route::post('/lits/{lit}/statut',          [LitController::class,'changerStatut'])->name('lits.statut');
     });
 });

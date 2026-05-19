@@ -45,6 +45,50 @@
         .err-msg{font-size:.75rem;color:var(--red);margin-top:3px;display:none}
         .field-hint{font-size:.73rem;color:var(--muted);margin-top:3px}
 
+        /* Style pour les boutons radio rôle */
+        .role-group {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .role-option {
+            flex: 1;
+            cursor: pointer;
+        }
+        .role-option input {
+            display: none;
+        }
+        .role-card {
+            background: #F8FAFD;
+            border: 2px solid #DDE3EC;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .role-option input:checked + .role-card {
+            border-color: var(--blue);
+            background: var(--blue-l);
+        }
+        .role-card i {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .role-card .role-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+        .role-card .role-desc {
+            font-size: 0.7rem;
+            color: var(--muted);
+        }
+        .role-option input:checked + .role-card .role-title {
+            color: var(--blue);
+        }
+
         /* Indicateur force mot de passe */
         .pw-strength{height:4px;border-radius:2px;margin-top:6px;transition:all .3s;background:#DDE3EC}
         .pw-strength-bar{height:100%;border-radius:2px;transition:all .3s;width:0}
@@ -96,7 +140,7 @@
             @csrf
             <div class="row g-3">
                 <div class="col-6">
-                    <label class="form-label">Nom <span style="color:var(--red)">*</span></label>
+                    <label class="form-label">Nom <span class="text-danger">*</span></label>
                     <div class="input-wrap">
                         <i class="bi bi-person input-icon"></i>
                         <input type="text" name="nom" id="rNom" value="{{ old('nom') }}"
@@ -106,7 +150,7 @@
                     <div class="field-hint">Pas de chiffres.</div>
                 </div>
                 <div class="col-6">
-                    <label class="form-label">Prénom <span style="color:var(--red)">*</span></label>
+                    <label class="form-label">Prénom <span class="text-danger">*</span></label>
                     <div class="input-wrap">
                         <i class="bi bi-person input-icon"></i>
                         <input type="text" name="prenom" id="rPrenom" value="{{ old('prenom') }}"
@@ -114,42 +158,68 @@
                         <div class="err-msg" id="rPrenom-err">Lettres uniquement.</div>
                     </div>
                 </div>
-                <div class="col-12">
-                    <label class="form-label">Adresse email <span style="color:var(--red)">*</span></label>
-                    <div class="input-wrap">
-                        <i class="bi bi-envelope input-icon"></i>
-                        <input type="email" name="email" id="rEmail" value="{{ old('email') }}"
-                               class="form-control" placeholder="agent@chud-ba.bj" required autocomplete="email">
-                        <div class="err-msg" id="rEmail-err">Email invalide.</div>
-                    </div>
+            </div>
+
+            {{-- Choix du rôle --}}
+            <div class="mb-3">
+                <label class="form-label">Type de compte <span class="text-danger">*</span></label>
+                <div class="role-group">
+                    <label class="role-option">
+                        <input type="radio" name="role" value="user" {{ old('role') == 'user' ? 'checked' : '' }} required>
+                        <div class="role-card">
+                            <i class="bi bi-person-badge"></i>
+                            <div class="role-title">Agent d'accueil</div>
+                            <div class="role-desc">Gestion des patients, visites et mouvements</div>
+                        </div>
+                    </label>
+                    <label class="role-option">
+                        <input type="radio" name="role" value="infirmier" {{ old('role') == 'infirmier' ? 'checked' : '' }} required>
+                        <div class="role-card">
+                            <i class="bi bi-hospital"></i>
+                            <div class="role-title">Infirmier</div>
+                            <div class="role-desc">Gestion des soins et suivi des patients</div>
+                        </div>
+                    </label>
                 </div>
-                <div class="col-12">
-                    <label class="form-label">Mot de passe <span style="color:var(--red)">*</span></label>
-                    <div class="input-wrap">
-                        <i class="bi bi-lock input-icon"></i>
-                        <input type="password" name="password" id="rPw"
-                               class="form-control" placeholder="Min. 8 caractères" required autocomplete="new-password">
-                        <button type="button" class="eye-toggle" id="eyePw">
-                            <i class="bi bi-eye-slash" id="eyePwIc"></i>
-                        </button>
-                        <div class="err-msg" id="rPw-err">Au moins 8 caractères.</div>
-                    </div>
-                    <div class="pw-strength"><div class="pw-strength-bar" id="pwBar"></div></div>
-                    <div class="pw-strength-text" id="pwText"></div>
-                </div>
-                <div class="col-12">
-                    <label class="form-label">Confirmer le mot de passe <span style="color:var(--red)">*</span></label>
-                    <div class="input-wrap">
-                        <i class="bi bi-lock-fill input-icon"></i>
-                        <input type="password" name="password_confirmation" id="rPwC"
-                               class="form-control" placeholder="Répétez le mot de passe" required autocomplete="new-password">
-                        <button type="button" class="eye-toggle" id="eyePwC">
-                            <i class="bi bi-eye-slash" id="eyePwCIc"></i>
-                        </button>
-                        <div class="err-msg" id="rPwC-err">Les mots de passe ne correspondent pas.</div>
-                    </div>
+                @error('role')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Adresse email <span class="text-danger">*</span></label>
+                <div class="input-wrap">
+                    <i class="bi bi-envelope input-icon"></i>
+                    <input type="email" name="email" id="rEmail" value="{{ old('email') }}"
+                           class="form-control" placeholder="agent@chud-ba.bj" required autocomplete="email">
+                    <div class="err-msg" id="rEmail-err">Email invalide.</div>
                 </div>
             </div>
+            <div class="col-12">
+                <label class="form-label">Mot de passe <span class="text-danger">*</span></label>
+                <div class="input-wrap">
+                    <i class="bi bi-lock input-icon"></i>
+                    <input type="password" name="password" id="rPw"
+                           class="form-control" placeholder="Min. 8 caractères" required autocomplete="new-password">
+                    <button type="button" class="eye-toggle" id="eyePw">
+                        <i class="bi bi-eye-slash" id="eyePwIc"></i>
+                    </button>
+                    <div class="err-msg" id="rPw-err">Au moins 8 caractères.</div>
+                </div>
+                <div class="pw-strength"><div class="pw-strength-bar" id="pwBar"></div></div>
+                <div class="pw-strength-text" id="pwText"></div>
+            </div>
+            <div class="col-12">
+                <label class="form-label">Confirmer le mot de passe <span class="text-danger">*</span></label>
+                <div class="input-wrap">
+                    <i class="bi bi-lock-fill input-icon"></i>
+                    <input type="password" name="password_confirmation" id="rPwC"
+                           class="form-control" placeholder="Répétez le mot de passe" required autocomplete="new-password">
+                    <button type="button" class="eye-toggle" id="eyePwC">
+                        <i class="bi bi-eye-slash" id="eyePwCIc"></i>
+                    </button>
+                    <div class="err-msg" id="rPwC-err">Les mots de passe ne correspondent pas.</div>
+                </div>
+            </div>
+
             <button type="submit" class="btn-auth" id="btnReg">
                 <span class="spinner" id="regSpinner"></span>
                 Créer mon compte
@@ -218,9 +288,26 @@ document.getElementById('regForm').addEventListener('submit',function(e){
     const email=document.getElementById('rEmail').value.trim();
     const pw=document.getElementById('rPw').value;
     const pwc=document.getElementById('rPwC').value;
+    const role = document.querySelector('input[name="role"]:checked');
 
     if(!nom||!lettres.test(nom))showErr('rNom','Nom invalide (lettres uniquement).');
     if(!prenom||!lettres.test(prenom))showErr('rPrenom','Prénom invalide (lettres uniquement).');
+    if(!role) {
+        // Afficher une erreur si aucun rôle n'est sélectionné
+        const roleError = document.createElement('div');
+        if(!document.getElementById('role-err')) {
+            const roleGroup = document.querySelector('.role-group');
+            const errDiv = document.createElement('div');
+            errDiv.id = 'role-err';
+            errDiv.className = 'text-danger small mt-1';
+            errDiv.textContent = 'Veuillez sélectionner un type de compte.';
+            roleGroup.parentNode.appendChild(errDiv);
+        }
+        ok = false;
+    } else {
+        const roleErr = document.getElementById('role-err');
+        if(roleErr) roleErr.remove();
+    }
     if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))showErr('rEmail','Email invalide.');
     if(!pw||pw.length<8)showErr('rPw','Au moins 8 caractères requis.');
     if(pw!==pwc)showErr('rPwC','Les mots de passe ne correspondent pas.');

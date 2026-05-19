@@ -11,7 +11,7 @@
     </a>
 </div>
 
-<div class="card mb-3">
+<div class="card mb-3 animate__animated animate__fadeInUp">
     <div class="card-body py-3 px-4">
         <div class="d-flex gap-2 flex-wrap align-items-center">
 
@@ -51,7 +51,7 @@
     </div>
 </div>
 
-<div class="card mb-3">
+<div class="card mb-3 animate__animated animate__fadeInUp" >
     <div class="card-body py-3 px-4">
         <form method="GET" id="filterForm" novalidate>
             <div class="row g-3 align-items-end">
@@ -102,7 +102,7 @@
         @endif
     </div>
 </div>
-<div class="card">
+<div class="card animate__animated animate__fadeInUp">
     <div class="card-body p-0">
         @if($patients->isEmpty())
         <div class="text-center py-5" style="color:var(--muted)">

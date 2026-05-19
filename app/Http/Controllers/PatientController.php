@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Patient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 
 class PatientController extends Controller
 {
@@ -13,7 +14,6 @@ class PatientController extends Controller
     {
         $query = Patient::with('user')->latest();
 
-        // Filtre par recherche textuelle (nom, prénom, code, NPI, téléphone)
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
@@ -25,7 +25,6 @@ class PatientController extends Controller
             });
         }
 
-        // Filtre par période (date_start et date_end)
         if ($request->filled('date_start')) {
             $dateStart = $request->date_start . ' 00:00:00';
             $query->where('created_at', '>=', $dateStart);
@@ -37,20 +36,16 @@ class PatientController extends Controller
         }
 
         $patients = $query->paginate(15)->withQueryString();
-
-        // Total des patients pour la période sélectionnée
         $totalPatients = $query->count();
 
         return view('patients.index', compact('patients', 'totalPatients'));
     }
 
-    // ── Formulaire création ──────────────────────────────────────────────
     public function create()
     {
         return view('patients.create');
     }
 
-    // ── Enregistrement ───────────────────────────────────────────────────
     public function store(Request $request)
     {
         $request->validate([
@@ -71,6 +66,24 @@ class PatientController extends Controller
             'telephone.regex'      => 'Le téléphone doit contenir uniquement des chiffres (8 à 15), avec éventuellement un + au début.',
             'npi.regex'            => 'Le NPI doit contenir exactement 10 chiffres.',
         ]);
+
+        // Vérification du téléphone même si NPI différent
+        if ($request->filled('telephone')) {
+            $existingPatient = Patient::where('telephone', $request->telephone)->first();
+            if ($existingPatient) {
+                return back()->withErrors(['telephone' => 'Ce numéro de téléphone est déjà utilisé par un autre patient.'])
+                             ->withInput();
+            }
+        }
+
+        // Vérification du NPI
+        if ($request->filled('npi')) {
+            $existingPatient = Patient::where('npi', $request->npi)->first();
+            if ($existingPatient) {
+                return back()->withErrors(['npi' => 'Ce NPI est déjà utilisé par un autre patient.'])
+                             ->withInput();
+            }
+        }
 
         $codeUnique = $this->genererCodeUnique($request->npi, $request->telephone);
 
@@ -93,60 +106,25 @@ class PatientController extends Controller
                          ->with('success', 'Patient enregistré. Code : '.$codeUnique);
     }
 
-    // ── Détail / Historique ──────────────────────────────────────────────
     public function show(Patient $patient)
     {
-        $patient->load(['user', 'circuits', 'factures']);
+        $patient->load(['user']);
 
-        // Historique combiné
-        $historique = collect();
+        $visites = $patient->visites()
+            ->with(['mouvements.service', 'mouvements.salle', 'mouvements.lit', 'mouvements.agent', 'validatedBy'])
+            ->orderByDesc('date_debut')
+            ->get();
 
-        // Ajouter les circuits
-        foreach ($patient->circuits as $circuit) {
-            $historique->push([
-                'type' => 'circuit',
-                'id' => $circuit->id,
-                'service' => $circuit->service->nom_service ?? 'Service',
-                'detail' => $circuit->description ?? 'Passage enregistré',
-                'date' => $circuit->created_at,
-                'agent' => ($circuit->user->prenom ?? '') . ' ' . ($circuit->user->nom ?? ''),
-                'data' => $circuit
-            ]);
-        }
+        $visiteEnCours = $patient->getVisiteEnCours();
 
-        // Ajouter les factures
-        foreach ($patient->factures as $facture) {
-            $detail = "Facture N° " . $facture->numero_facture . " - ";
-            $detail .= "Montant: " . number_format($facture->montant, 0, ',', ' ') . " FCFA";
-
-            if ($facture->has_p_e_c) {
-                $detail .= " | Prise en charge: " . $facture->pec_organisme . " (" . number_format($facture->pec_montant, 0, ',', ' ') . " FCFA)";
-                $detail .= " | Solde patient: " . number_format($facture->montant_patient, 0, ',', ' ') . " FCFA";
-            }
-
-            $historique->push([
-                'type' => 'facture',
-                'id' => $facture->id,
-                'service' => $facture->service->nom_service ?? 'Service',
-                'detail' => $detail,
-                'date' => $facture->created_at,
-                'agent' => ($facture->user->prenom ?? '') . ' ' . ($facture->user->nom ?? ''),
-                'data' => $facture
-            ]);
-        }
-
-        $historique = $historique->sortByDesc('date');
-
-        return view('patients.show', compact('patient', 'historique'));
+        return view('patients.show', compact('patient', 'visites', 'visiteEnCours'));
     }
 
-    // ── Formulaire modification ──────────────────────────────────────────
     public function edit(Patient $patient)
     {
         return view('patients.edit', compact('patient'));
     }
 
-    // ── Mise à jour ──────────────────────────────────────────────────────
     public function update(Request $request, Patient $patient)
     {
         $request->validate([
@@ -166,6 +144,24 @@ class PatientController extends Controller
             'npi.regex'            => 'Le NPI doit contenir exactement 10 chiffres.',
         ]);
 
+        // Vérification du téléphone pour modification (exclure le patient actuel)
+        if ($request->filled('telephone') && $request->telephone !== $patient->telephone) {
+            $existingPatient = Patient::where('telephone', $request->telephone)->where('id', '!=', $patient->id)->first();
+            if ($existingPatient) {
+                return back()->withErrors(['telephone' => 'Ce numéro de téléphone est déjà utilisé par un autre patient.'])
+                             ->withInput();
+            }
+        }
+
+        // Vérification du NPI pour modification
+        if ($request->filled('npi') && $request->npi !== $patient->npi) {
+            $existingPatient = Patient::where('npi', $request->npi)->where('id', '!=', $patient->id)->first();
+            if ($existingPatient) {
+                return back()->withErrors(['npi' => 'Ce NPI est déjà utilisé par un autre patient.'])
+                             ->withInput();
+            }
+        }
+
         $ancienCode  = $patient->code_unique;
         $nouveauCode = $this->genererCodeUniqueMaj($request->npi, $request->telephone, $ancienCode);
 
@@ -181,21 +177,48 @@ class PatientController extends Controller
             'date_naissance' => $request->date_naissance ?: null,
             'adresse'        => $request->adresse        ?: null,
             'telephone'      => $request->telephone      ?: null,
-            'npi'            => $request->npi            ?: null,
+            'npi'            => $request->npi            ?: nil,
         ]);
 
         return redirect()->route('patients.show',$patient)
                          ->with('success','Patient mis à jour.'.($nouveauCode!==$ancienCode?' Nouveau code : '.$nouveauCode:''));
     }
 
-    // ── Suppression ──────────────────────────────────────────────────────
     public function destroy(Patient $patient)
     {
         $patient->delete();
         return redirect()->route('patients.index')->with('success','Patient supprimé.');
     }
 
-    // ── Génération code (création) ───────────────────────────────────────
+    public function apiShow($id)
+    {
+        $patient = Patient::with(['visites' => function($q) {
+            $q->with(['mouvements.service', 'mouvements.lit', 'mouvements.salle']);
+        }])->findOrFail($id);
+
+        $visiteEnCours = $patient->getVisiteEnCours();
+        $litActuel = $visiteEnCours ? $visiteEnCours->getLitActuel() : null;
+
+        return response()->json([
+            'id' => $patient->id,
+            'nom' => $patient->nom,
+            'prenom' => $patient->prenom,
+            'code_unique' => $patient->code_unique,
+            'visite_en_cours' => $visiteEnCours ? [
+                'id' => $visiteEnCours->id,
+                'numero_visite' => $visiteEnCours->numero_visite,
+                'date_debut' => $visiteEnCours->date_debut,
+                'duree' => $visiteEnCours->getDuree()
+            ] : null,
+            'lit_actuel' => $litActuel ? [
+                'id' => $litActuel->id,
+                'numero' => $litActuel->numero
+            ] : null,
+            'service_actuel' => $visiteEnCours && $visiteEnCours->mouvements->last() ?
+                $visiteEnCours->mouvements->last()->service->nom_service : null
+        ]);
+    }
+
     private function genererCodeUnique(?string $npi, ?string $telephone): string
     {
         if ($npi && preg_match('/^[0-9]{10}$/', $npi))             return $npi;
@@ -203,15 +226,13 @@ class PatientController extends Controller
         return $this->prochainNumeroOrdre();
     }
 
-    // ── Génération code (modification) ───────────────────────────────────
     private function genererCodeUniqueMaj(?string $npi, ?string $telephone, string $ancien): string
     {
         if ($npi && preg_match('/^[0-9]{10}$/', $npi))             return $npi;
         if ($telephone && preg_match('/^[0-9]{10}$/', $telephone)) return $telephone;
-        return $ancien; // aucun identifiant → conserver l'ancien
+        return $ancien;
     }
 
-    // ── Prochain numéro d'ordre ──────────────────────────────────────────
     private function prochainNumeroOrdre(): string
     {
         $dernier = Patient::where('code_unique','REGEXP','^0{4}[0-9]{6}$')

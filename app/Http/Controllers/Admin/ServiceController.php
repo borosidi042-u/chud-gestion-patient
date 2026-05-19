@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use App\Models\Salle;
+use App\Models\Lit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,7 +17,21 @@ class ServiceController extends Controller
             abort(403, 'Réservé à l\'administrateur.');
         }
 
-        $services = Service::withCount(['circuits', 'factures'])->orderBy('nom_service')->get();
+        $services = Service::with(['salles.lits'])->withCount(['salles as salles_count'])->orderBy('nom_service')->get();
+
+        // Calculer le nombre total de lits par service
+        foreach ($services as $service) {
+            $service->lits_count = $service->salles->sum(function($salle) {
+                return $salle->lits->count();
+            });
+            $service->lits_libres = $service->salles->sum(function($salle) {
+                return $salle->lits->where('statut', 'libre')->count();
+            });
+            $service->lits_occupes = $service->salles->sum(function($salle) {
+                return $salle->lits->where('statut', 'occupe')->count();
+            });
+        }
+
         return view('admin.services.index', compact('services'));
     }
 
@@ -42,17 +58,15 @@ class ServiceController extends Controller
                 'regex:/^[\p{L}0-9\s\-\']+$/u',
                 'unique:services,nom_service',
                 function ($attribute, $value, $fail) {
-                    // Vérifier que le nom n'est pas composé uniquement de chiffres
                     if (preg_match('/^\d+$/', trim($value))) {
                         $fail('Le nom du service ne peut pas être composé uniquement de chiffres.');
                     }
-                    // Vérifier qu'il y a au moins une lettre
                     if (!preg_match('/[\p{L}]/u', trim($value))) {
                         $fail('Le nom du service doit contenir au moins une lettre.');
                     }
                 },
             ],
-            'description' => ['nullable', 'string', 'max:500'], // Augmenté à 500 caractères
+            'description' => ['nullable', 'string', 'max:500'],
         ], [
             'nom_service.required' => 'Le nom du service est obligatoire.',
             'nom_service.regex'    => 'Le nom ne doit contenir que des lettres, chiffres, espaces ou tirets.',
@@ -63,6 +77,7 @@ class ServiceController extends Controller
         Service::create([
             'nom_service' => trim($request->nom_service),
             'description' => trim($request->description),
+            'is_active' => true,
         ]);
 
         return redirect()->route('admin.services.index')
@@ -92,11 +107,9 @@ class ServiceController extends Controller
                 'regex:/^[\p{L}0-9\s\-\']+$/u',
                 'unique:services,nom_service,' . $service->id,
                 function ($attribute, $value, $fail) {
-                    // Vérifier que le nom n'est pas composé uniquement de chiffres
                     if (preg_match('/^\d+$/', trim($value))) {
                         $fail('Le nom du service ne peut pas être composé uniquement de chiffres.');
                     }
-                    // Vérifier qu'il y a au moins une lettre
                     if (!preg_match('/[\p{L}]/u', trim($value))) {
                         $fail('Le nom du service doit contenir au moins une lettre.');
                     }
@@ -123,10 +136,11 @@ class ServiceController extends Controller
             abort(403, 'Réservé à l\'administrateur.');
         }
 
-        if ($service->circuits()->count() > 0 || $service->factures()->count() > 0) {
+        if ($service->salles()->count() > 0) {
             return redirect()->route('admin.services.index')
-                             ->with('error', 'Impossible : ce service est lié à des données existantes.');
+                             ->with('error', 'Impossible : ce service contient des salles. Supprimez d\'abord les salles.');
         }
+
         $service->delete();
         return redirect()->route('admin.services.index')->with('success', 'Service supprimé.');
     }

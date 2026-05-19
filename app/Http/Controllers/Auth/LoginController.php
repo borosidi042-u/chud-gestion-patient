@@ -67,6 +67,7 @@ class LoginController extends Controller
         $request->validate([
             'nom'      => ['required','string','max:100','regex:/^[\p{L}\s\-\']+$/u'],
             'prenom'   => ['required','string','max:100','regex:/^[\p{L}\s\-\']+$/u'],
+            'role'     => ['required','in:user,infirmier'],
             'email'    => ['required','email','max:255','unique:users,email'],
             'password' => ['required','string','min:8','confirmed'],
         ], [
@@ -74,6 +75,8 @@ class LoginController extends Controller
             'nom.regex'          => 'Le nom ne doit contenir que des lettres.',
             'prenom.required'    => 'Le prénom est obligatoire.',
             'prenom.regex'       => 'Le prénom ne doit contenir que des lettres.',
+            'role.required'      => 'Veuillez sélectionner un type de compte.',
+            'role.in'            => 'Type de compte invalide.',
             'email.required'     => 'L\'email est obligatoire.',
             'email.email'        => 'L\'email n\'est pas valide.',
             'email.unique'       => 'Cet email est déjà utilisé.',
@@ -87,7 +90,7 @@ class LoginController extends Controller
             'prenom'   => ucfirst(strtolower(trim($request->prenom))),
             'email'    => strtolower(trim($request->email)),
             'password' => Hash::make($request->password),
-            'role'     => 'user',
+            'role'     => $request->role, // 'user' ou 'infirmier'
             'approved' => false, // En attente de validation
         ]);
 
