@@ -60,7 +60,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/mouvements/admission',            [CircuitController::class, 'storeAdmission'])->name('mouvements.admission');
     Route::post('/mouvements/transfert',            [CircuitController::class, 'storeTransfert'])->name('mouvements.transfert');
     Route::post('/mouvements/sortie',               [CircuitController::class, 'storeSortie'])->name('mouvements.sortie');
-    Route::get('/circuits/{circuit}/modifier', [CircuitController::class, 'edit'])->name('circuits.edit');
+    Route::get('/circuits/{circuit}/modifier',      [CircuitController::class, 'edit'])->name('circuits.edit');
     Route::put('/circuits/{circuit}',               [CircuitController::class, 'update'])->name('circuits.update');
     Route::delete('/circuits/{circuit}',            [CircuitController::class, 'destroy'])->name('circuits.destroy');
 

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: chud-gestion-patient
+    runtime: image
+    repo: https://github.com/borosidi042-u/chud-gestion-patient
+    plan: free
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        sync: false
+      - key: DB_CONNECTION
+        value: pgsql
