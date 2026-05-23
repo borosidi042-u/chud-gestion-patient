@@ -236,8 +236,53 @@ const lettres=/^[\p{L}\s\-']+$/u;
 
 // Bloquer chiffres dans nom/prénom
 ['rNom','rPrenom'].forEach(id=>{
-    document.getElementById(id).addEventListener('input',function(){
+    const input = document.getElementById(id);
+    input.addEventListener('input',function(){
         this.value=this.value.replace(/[0-9]/g,'');
+    });
+});
+
+// Fonction pour réinitialiser l'état d'erreur d'un champ
+function resetFieldError(fieldId) {
+    const field = document.getElementById(fieldId);
+    const errMsg = document.getElementById(fieldId + '-err');
+    if(field) {
+        field.classList.remove('is-invalid');
+    }
+    if(errMsg) {
+        errMsg.style.display = 'none';
+    }
+}
+
+// Fonction pour réinitialiser l'erreur du rôle
+function resetRoleError() {
+    const roleErr = document.getElementById('role-err');
+    if(roleErr) roleErr.remove();
+}
+
+// Ajouter les écouteurs d'événements pour réinitialiser les erreurs dès que l'utilisateur interagit
+// Pour les champs texte, email et password
+const resetOnInputFields = ['rNom', 'rPrenom', 'rEmail', 'rPw', 'rPwC'];
+resetOnInputFields.forEach(fieldId => {
+    const field = document.getElementById(fieldId);
+    if(field) {
+        field.addEventListener('input', function() {
+            resetFieldError(fieldId);
+        });
+        field.addEventListener('focus', function() {
+            resetFieldError(fieldId);
+        });
+    }
+});
+
+// Pour les boutons radio du rôle - réinitialiser l'erreur quand on clique sur une option
+const roleRadios = document.querySelectorAll('input[name="role"]');
+roleRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+        resetRoleError();
+    });
+    radio.addEventListener('click', function() {
+        resetRoleError();
     });
 });
 
@@ -259,7 +304,7 @@ document.getElementById('rPw').addEventListener('input',function(){
     const levels=[
         {w:'0%',c:'#DDE3EC',t:''},
         {w:'25%',c:'var(--red)',t:'Très faible'},
-        {w:'50%',c:'var(--amber)',t:'Faible'},
+        {w:'50%',c:'#EAB308',t:'Faible'},
         {w:'75%',c:'#F59E0B',t:'Moyen'},
         {w:'90%',c:'var(--green)',t:'Fort'},
         {w:'100%',c:'#065F46',t:'Très fort'},
@@ -267,6 +312,14 @@ document.getElementById('rPw').addEventListener('input',function(){
     const l=levels[Math.min(score,5)];
     bar.style.width=l.w;bar.style.background=l.c;
     txt.textContent=l.t;txt.style.color=l.c;
+
+    // Si l'utilisateur tape dans le mot de passe, réinitialiser aussi l'erreur de confirmation
+    resetFieldError('rPwC');
+});
+
+// Quand l'utilisateur tape dans la confirmation, réinitialiser son erreur
+document.getElementById('rPwC').addEventListener('input', function() {
+    resetFieldError('rPwC');
 });
 
 // Validation soumission
@@ -274,12 +327,17 @@ document.getElementById('regForm').addEventListener('submit',function(e){
     let ok=true;
     function showErr(id,msg){
         const el=document.getElementById(id),err=document.getElementById(id+'-err');
-        el.classList.add('is-invalid');if(err){err.style.display='block';if(msg)err.textContent=msg;}
+        el.classList.add('is-invalid');
+        if(err){
+            err.style.display='block';
+            if(msg)err.textContent=msg;
+        }
         ok=false;
     }
     function clearErr(id){
         const el=document.getElementById(id),err=document.getElementById(id+'-err');
-        el.classList.remove('is-invalid');if(err)err.style.display='none';
+        el.classList.remove('is-invalid');
+        if(err)err.style.display='none';
     }
     ['rNom','rPrenom','rEmail','rPw','rPwC'].forEach(clearErr);
 
@@ -293,15 +351,14 @@ document.getElementById('regForm').addEventListener('submit',function(e){
     if(!nom||!lettres.test(nom))showErr('rNom','Nom invalide (lettres uniquement).');
     if(!prenom||!lettres.test(prenom))showErr('rPrenom','Prénom invalide (lettres uniquement).');
     if(!role) {
-        // Afficher une erreur si aucun rôle n'est sélectionné
-        const roleError = document.createElement('div');
-        if(!document.getElementById('role-err')) {
-            const roleGroup = document.querySelector('.role-group');
-            const errDiv = document.createElement('div');
-            errDiv.id = 'role-err';
-            errDiv.className = 'text-danger small mt-1';
-            errDiv.textContent = 'Veuillez sélectionner un type de compte.';
-            roleGroup.parentNode.appendChild(errDiv);
+        const roleGroup = document.querySelector('.role-group');
+        let roleErr = document.getElementById('role-err');
+        if(!roleErr) {
+            roleErr = document.createElement('div');
+            roleErr.id = 'role-err';
+            roleErr.className = 'text-danger small mt-1';
+            roleErr.textContent = 'Veuillez sélectionner un type de compte.';
+            roleGroup.parentNode.appendChild(roleErr);
         }
         ok = false;
     } else {

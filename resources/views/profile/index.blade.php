@@ -83,7 +83,7 @@
                     <label class="form-label">Nom <span class="text-danger">*</span></label>
                     <input type="text" name="nom" id="iNom" value="{{ old('nom',$user->nom) }}"
                            class="form-control @error('nom') is-invalid @enderror"
-                           required autocomplete="family-name">
+                           autocomplete="family-name">
                     <div class="invalid-feedback" id="iNom-err">{{ $errors->first('nom') ?: 'Lettres uniquement.' }}</div>
                     <div class="field-hint">Lettres, espaces et tirets uniquement.</div>
                 </div>
@@ -91,7 +91,7 @@
                     <label class="form-label">Prénom <span class="text-danger">*</span></label>
                     <input type="text" name="prenom" id="iPrenom" value="{{ old('prenom',$user->prenom) }}"
                            class="form-control @error('prenom') is-invalid @enderror"
-                           required autocomplete="given-name">
+                           autocomplete="given-name">
                     <div class="invalid-feedback" id="iPrenom-err">{{ $errors->first('prenom') ?: 'Lettres uniquement.' }}</div>
                 </div>
                 <div class="col-12">
@@ -133,7 +133,7 @@
                     <div class="position-relative">
                         <input type="password" name="current_password" id="curPw"
                                class="form-control pe-5 @error('current_password') is-invalid @enderror"
-                               placeholder="••••••••" required autocomplete="current-password">
+                               placeholder="••••••••" autocomplete="current-password">
                         <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y me-1"
                                 style="background:none;border:none;color:var(--muted)"
                                 onclick="togglePw('curPw','eyeCur')">
@@ -149,7 +149,7 @@
                     <div class="position-relative">
                         <input type="password" name="password" id="newPw"
                                class="form-control pe-5 @error('password') is-invalid @enderror"
-                               placeholder="Min. 8 caractères" required autocomplete="new-password">
+                               placeholder="Min. 8 caractères" autocomplete="new-password">
                         <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y me-1"
                                 style="background:none;border:none;color:var(--muted)"
                                 onclick="togglePw('newPw','eyeNew')">
@@ -168,7 +168,7 @@
                     <label class="form-label">Confirmer le nouveau mot de passe <span class="text-danger">*</span></label>
                     <div class="position-relative">
                         <input type="password" name="password_confirmation" id="confPw"
-                               class="form-control pe-5" placeholder="Répétez" required autocomplete="new-password">
+                               class="form-control pe-5" placeholder="Répétez" autocomplete="new-password">
                         <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y me-1"
                                 style="background:none;border:none;color:var(--muted)"
                                 onclick="togglePw('confPw','eyeConf')">
@@ -213,42 +213,123 @@ function togglePw(inpId, icId) {
     ic.className=el.type==='password'?'bi bi-eye-slash':'bi bi-eye';
 }
 
-// ── Bloquer chiffres nom/prénom ──────────────────────────────────────────
+// Fonction pour réinitialiser l'erreur d'un champ
+function resetFieldError(fieldId, errId) {
+    const field = document.getElementById(fieldId);
+    const errDiv = document.getElementById(errId);
+    if(field) {
+        field.classList.remove('is-invalid');
+    }
+    if(errDiv) {
+        errDiv.style.display = 'none';
+    }
+}
+
+// Fonction pour afficher l'erreur d'un champ
+function showFieldError(fieldId, errId) {
+    const field = document.getElementById(fieldId);
+    const errDiv = document.getElementById(errId);
+    if(field) {
+        field.classList.add('is-invalid');
+    }
+    if(errDiv) {
+        errDiv.style.display = 'block';
+    }
+}
+
+// ── Bloquer chiffres nom/prénom + réinitialisation ──────────────────────
 ['iNom','iPrenom'].forEach(id=>{
     const el=document.getElementById(id);
-    if(el)el.addEventListener('input',function(){this.value=this.value.replace(/[0-9]/g,'');});
+    if(el) {
+        el.addEventListener('input', function(){
+            this.value = this.value.replace(/[0-9]/g,'');
+            resetFieldError(id, id+'-err');
+        });
+        el.addEventListener('focus', function(){
+            resetFieldError(id, id+'-err');
+        });
+    }
 });
+
+// ── Réinitialisation pour les champs mot de passe ────────────────────────
+const curPw = document.getElementById('curPw');
+if(curPw) {
+    curPw.addEventListener('input', function() { resetFieldError('curPw', 'curPw-err'); });
+    curPw.addEventListener('focus', function() { resetFieldError('curPw', 'curPw-err'); });
+}
+
+const newPw = document.getElementById('newPw');
+if(newPw) {
+    newPw.addEventListener('input', function() {
+        resetFieldError('newPw', 'newPw-err');
+        // Force du mot de passe
+        const v=this.value,bar=document.getElementById('pwStrBar'),lbl=document.getElementById('pwStrLbl');
+        let s=0;if(v.length>=8)s++;if(v.length>=12)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;
+        const lv=[{w:'0%',c:'#EEF2F7',t:''},{w:'20%',c:'var(--red)',t:'Très faible'},{w:'40%',c:'#F59E0B',t:'Faible'},{w:'65%',c:'#D97706',t:'Moyen'},{w:'85%',c:'var(--green)',t:'Fort'},{w:'100%',c:'#065F46',t:'Très fort'}][Math.min(s,5)];
+        bar.style.width=lv.w;bar.style.background=lv.c;lbl.textContent=lv.t;lbl.style.color=lv.c;
+    });
+    newPw.addEventListener('focus', function() { resetFieldError('newPw', 'newPw-err'); });
+}
+
+const confPw = document.getElementById('confPw');
+if(confPw) {
+    confPw.addEventListener('input', function() {
+        resetFieldError('confPw', 'confErr');
+    });
+    confPw.addEventListener('focus', function() {
+        resetFieldError('confPw', 'confErr');
+    });
+}
 
 // ── Validation info ──────────────────────────────────────────────────────
 const lettres=/^[\p{L}\s\-']+$/u;
 document.getElementById('infoForm').addEventListener('submit',function(e){
     let ok=true;
     const nom=document.getElementById('iNom'),pr=document.getElementById('iPrenom');
-    [nom,pr].forEach(el=>el.classList.remove('is-invalid'));
-    if(!nom.value.trim()||!lettres.test(nom.value)){nom.classList.add('is-invalid');ok=false;}
-    if(!pr.value.trim()||!lettres.test(pr.value)){pr.classList.add('is-invalid');ok=false;}
-    if(!ok)e.preventDefault();
-});
 
-// ── Force mot de passe ───────────────────────────────────────────────────
-const newPw=document.getElementById('newPw');
-if(newPw)newPw.addEventListener('input',function(){
-    const v=this.value,bar=document.getElementById('pwStrBar'),lbl=document.getElementById('pwStrLbl');
-    let s=0;if(v.length>=8)s++;if(v.length>=12)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;
-    const lv=[{w:'0%',c:'#EEF2F7',t:''},{w:'20%',c:'var(--red)',t:'Très faible'},{w:'40%',c:'#F59E0B',t:'Faible'},{w:'65%',c:'#D97706',t:'Moyen'},{w:'85%',c:'var(--green)',t:'Fort'},{w:'100%',c:'#065F46',t:'Très fort'}][Math.min(s,5)];
-    bar.style.width=lv.w;bar.style.background=lv.c;lbl.textContent=lv.t;lbl.style.color=lv.c;
+    resetFieldError('iNom', 'iNom-err');
+    resetFieldError('iPrenom', 'iPrenom-err');
+
+    if(!nom.value.trim()||!lettres.test(nom.value)){
+        showFieldError('iNom', 'iNom-err');
+        ok=false;
+    }
+    if(!pr.value.trim()||!lettres.test(pr.value)){
+        showFieldError('iPrenom', 'iPrenom-err');
+        ok=false;
+    }
+    if(!ok)e.preventDefault();
 });
 
 // ── Validation mot de passe ──────────────────────────────────────────────
 const pwForm=document.getElementById('pwForm');
-if(pwForm)pwForm.addEventListener('submit',function(e){
-    let ok=true;
-    const pw=document.getElementById('newPw'),conf=document.getElementById('confPw');
-    const confErr=document.getElementById('confErr');
-    conf.classList.remove('is-invalid');confErr.style.display='none';
-    if(!pw.value||pw.value.length<8){pw.classList.add('is-invalid');ok=false;}
-    if(pw.value!==conf.value){conf.classList.add('is-invalid');confErr.style.display='block';ok=false;}
-    if(!ok)e.preventDefault();
-});
+if(pwForm){
+    pwForm.addEventListener('submit',function(e){
+        let ok=true;
+        const pw=document.getElementById('newPw'),conf=document.getElementById('confPw');
+
+        resetFieldError('newPw', 'newPw-err');
+        resetFieldError('confPw', 'confErr');
+
+        if(!pw.value||pw.value.length<8){
+            showFieldError('newPw', 'newPw-err');
+            ok=false;
+        }
+        if(pw.value!==conf.value){
+            showFieldError('confPw', 'confErr');
+            ok=false;
+        }
+        if(!ok)e.preventDefault();
+    });
+}
 </script>
+<style>
+.invalid-feedback {
+    display: none;
+}
+.is-invalid ~ .invalid-feedback,
+.invalid-feedback.show {
+    display: block;
+}
+</style>
 @endsection

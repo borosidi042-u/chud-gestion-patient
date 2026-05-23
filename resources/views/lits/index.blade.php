@@ -123,34 +123,6 @@
                         </div>
                     </div>
                 </div>
-
-                {{-- Modal changement de statut --}}
-                @if(Auth::user()->role === 'admin' && $lit->statut !== 'occupe')
-                <div class="modal fade" id="modalStatut{{ $lit->id }}" tabindex="-1">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Changer le statut du lit N°{{ $lit->numero }}</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <form action="{{ route('admin.lits.statut', $lit) }}" method="POST">
-                                @csrf
-                                <div class="modal-body">
-                                    <select name="statut" class="form-select" required>
-                                        <option value="libre" {{ $lit->statut === 'libre' ? 'selected' : '' }}>Libre</option>
-                                        <option value="maintenance" {{ $lit->statut === 'maintenance' ? 'selected' : '' }}>Maintenance</option>
-                                        <option value="hors_service" {{ $lit->statut === 'hors_service' ? 'selected' : '' }}>Hors service</option>
-                                    </select>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                                    <button type="submit" class="btn btn-primary">Enregistrer</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                @endif
                 @empty
                 <div class="col-12">
                     <p class="text-muted mb-0">Aucun lit dans cette salle.</p>
@@ -163,10 +135,93 @@
 </div>
 @endforeach
 
+{{-- Modals pour changer le statut (placés à la fin du body pour éviter les problèmes de positionnement) --}}
+@foreach($services as $service)
+    @foreach($service->salles as $salle)
+        @foreach($salle->lits as $lit)
+            @if(Auth::user()->role === 'admin' && $lit->statut !== 'occupe')
+            <div class="modal fade" id="modalStatut{{ $lit->id }}" tabindex="-1" aria-labelledby="modalStatutLabel{{ $lit->id }}" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <form action="{{ route('admin.lits.statut', $lit) }}" method="POST" id="formStatut{{ $lit->id }}">
+                            @csrf
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="modalStatutLabel{{ $lit->id }}">
+                                    <i class="bi bi-hospital me-2"></i>Changer le statut - Lit N°{{ $lit->numero }}
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Nouveau statut</label>
+                                    <select name="statut" class="form-select" required>
+                                        <option value="libre" {{ $lit->statut === 'libre' ? 'selected' : '' }}>Libre</option>
+                                        <option value="maintenance" {{ $lit->statut === 'maintenance' ? 'selected' : '' }}>Maintenance</option>
+                                        <option value="hors_service" {{ $lit->statut === 'hors_service' ? 'selected' : '' }}>Hors service</option>
+                                    </select>
+                                </div>
+                                <div class="alert alert-info small mb-0">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Le statut "Occupé" est géré automatiquement par le système.
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="bi bi-x-circle me-1"></i>Annuler
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="btnSubmit{{ $lit->id }}">
+                                    <i class="bi bi-check-circle me-1"></i>Enregistrer
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            @endif
+        @endforeach
+    @endforeach
+@endforeach
+
 @endsection
 
 @section('scripts')
+<script>
+// Stabiliser les modals - éviter les problèmes de positionnement
+document.addEventListener('DOMContentLoaded', function() {
+    // Forcer Bootstrap à bien initialiser les modals
+    var modalElements = document.querySelectorAll('.modal');
+    modalElements.forEach(function(modalEl) {
+        var modal = new bootstrap.Modal(modalEl, {
+            backdrop: true,
+            keyboard: true,
+            focus: true
+        });
+
+        // Nettoyer le modal à la fermeture
+        modalEl.addEventListener('hidden.bs.modal', function() {
+            document.body.classList.remove('modal-open');
+            var backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(function(backdrop) {
+                backdrop.remove();
+            });
+        });
+    });
+});
+
+// Éviter la soumission multiple des formulaires
+document.querySelectorAll('form[id^="formStatut"]').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+        var submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Enregistrement...';
+        }
+    });
+});
+</script>
+
 <style>
+/* Styles pour les cartes lits */
 .lit-card {
     transition: transform 0.2s ease;
 }
@@ -185,6 +240,20 @@
 .lit-card.hors_service {
     border-left: 4px solid #6B7280;
     opacity: 0.7;
+}
+
+/* Stabiliser les modals */
+.modal {
+    background-color: rgba(0,0,0,0.5);
+}
+.modal-dialog {
+    margin: 1.75rem auto;
+}
+.modal.fade .modal-dialog {
+    transform: translate(0, -50px);
+}
+.modal.show .modal-dialog {
+    transform: translate(0, 0);
 }
 </style>
 @endsection

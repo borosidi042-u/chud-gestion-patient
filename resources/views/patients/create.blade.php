@@ -87,6 +87,19 @@ const chiffresReg = /^[\+]?[0-9]{8,15}$/;
 const npiReg      = /^[0-9]{10}$/;
 const adrReg      = /^[\p{L}0-9\s,.\-']+$/u;
 
+// Fonction pour réinitialiser l'état d'erreur d'un champ
+function resetFieldError(fieldId) {
+    const field = document.getElementById(fieldId);
+    const errEl = document.getElementById(fieldId + '-err');
+    if(field) {
+        field.classList.remove('is-invalid');
+    }
+    if(errEl) {
+        errEl.style.display = '';
+    }
+}
+
+// Fonction pour valider un champ (pour le feedback visuel)
 function setValid(el, ok, errEl, msg) {
     el.classList.toggle('is-invalid', !ok);
     el.classList.toggle('is-valid',   ok && el.value.trim() !== '');
@@ -101,17 +114,46 @@ function setValid(el, ok, errEl, msg) {
         const ok = this.value.trim()==='' || lettresReg.test(this.value);
         setValid(this, ok || this.value.trim()==='', document.getElementById(id+'-err'),
                  'Le '+id+' ne doit contenir que des lettres.');
+        // Réinitialiser l'erreur dès qu'on tape
+        resetFieldError(id);
     });
 });
 
-// Bloquer les lettres dans NPI / téléphone
+// Bloquer les lettres dans NPI / téléphone ET réinitialiser l'erreur
 ['npi','telephone'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener('input', function() {
         this.value = this.value.replace(/[^0-9\+]/g,'');
+        // Réinitialiser l'erreur dès qu'on tape
+        resetFieldError(id);
+    });
+    el.addEventListener('focus', function() {
+        resetFieldError(id);
     });
 });
+
+// Pour la date de naissance - réinitialiser l'erreur
+const dobField = document.getElementById('dob');
+if(dobField) {
+    dobField.addEventListener('input', function() {
+        resetFieldError('dob');
+    });
+    dobField.addEventListener('change', function() {
+        resetFieldError('dob');
+    });
+}
+
+// Pour l'adresse - réinitialiser l'erreur
+const adrField = document.getElementById('adresse');
+if(adrField) {
+    adrField.addEventListener('input', function() {
+        resetFieldError('adresse');
+    });
+    adrField.addEventListener('focus', function() {
+        resetFieldError('adresse');
+    });
+}
 
 // Validation à la soumission
 document.getElementById('formPatient').addEventListener('submit', function(e) {
@@ -124,33 +166,62 @@ document.getElementById('formPatient').addEventListener('submit', function(e) {
     const dob    = document.getElementById('dob');
     const adr    = document.getElementById('adresse');
 
+    // Réinitialiser toutes les erreurs avant validation
+    ['nom','prenom','npi','telephone','dob','adresse'].forEach(id => {
+        resetFieldError(id);
+    });
+
+    // Validation du nom
     if (!nom.value.trim() || !lettresReg.test(nom.value)) {
         setValid(nom,false,document.getElementById('nom-err'),'Nom invalide (lettres uniquement).');
         valid=false;
+    } else {
+        setValid(nom,true,document.getElementById('nom-err'),'');
     }
+
+    // Validation du prénom
     if (!prenom.value.trim() || !lettresReg.test(prenom.value)) {
         setValid(prenom,false,document.getElementById('prenom-err'),'Prénom invalide (lettres uniquement).');
         valid=false;
+    } else {
+        setValid(prenom,true,document.getElementById('prenom-err'),'');
     }
+
+    // Validation du NPI
     if (npi.value && !npiReg.test(npi.value)) {
         setValid(npi,false,document.getElementById('npi-err'),'NPI : exactement 10 chiffres.');
         valid=false;
+    } else if (npi.value && npiReg.test(npi.value)) {
+        setValid(npi,true,document.getElementById('npi-err'),'');
     }
+
+    // Validation du téléphone
     if (tel.value && !chiffresReg.test(tel.value)) {
         setValid(tel,false,document.getElementById('tel-err'),'Téléphone : 8 à 15 chiffres, + autorisé.');
         valid=false;
+    } else if (tel.value && chiffresReg.test(tel.value)) {
+        setValid(tel,true,document.getElementById('tel-err'),'');
     }
+
+    // Validation de la date de naissance
     if (dob.value) {
         const d = new Date(dob.value);
         if (isNaN(d) || d >= new Date()) {
             setValid(dob,false,document.getElementById('dob-err'),'Date invalide ou dans le futur.');
             valid=false;
+        } else {
+            setValid(dob,true,document.getElementById('dob-err'),'');
         }
     }
+
+    // Validation de l'adresse
     if (adr.value && !adrReg.test(adr.value)) {
         setValid(adr,false,document.getElementById('adr-err'),'Adresse invalide.');
         valid=false;
+    } else if (adr.value && adrReg.test(adr.value)) {
+        setValid(adr,true,document.getElementById('adr-err'),'');
     }
+
     if (!valid) e.preventDefault();
 });
 </script>

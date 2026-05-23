@@ -177,7 +177,7 @@ class PatientController extends Controller
             'date_naissance' => $request->date_naissance ?: null,
             'adresse'        => $request->adresse        ?: null,
             'telephone'      => $request->telephone      ?: null,
-            'npi'            => $request->npi            ?: nil,
+            'npi'            => $request->npi            ?: null,
         ]);
 
         return redirect()->route('patients.show',$patient)

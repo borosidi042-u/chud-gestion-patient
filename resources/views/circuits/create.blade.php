@@ -57,15 +57,16 @@
 
                         {{-- Onglet 1 : Passage sans lit --}}
                         <div class="tab-pane fade {{ $activeTab == 'passage' ? 'show active' : '' }}" id="passage" role="tabpanel">
-                            <form method="POST" action="{{ route('mouvements.passage') }}" id="formPassage">
+                            <form method="POST" action="{{ route('mouvements.passage') }}" id="formPassage" novalidate>
                                 @csrf
 
                                 @if(!isset($patient) || !$patient)
                                 <div class="mb-3">
                                     <label class="form-label">Patient <span class="text-danger">*</span></label>
-                                    <input type="text" id="searchPatientPassage" class="form-control" placeholder="Tapez le code, nom ou prénom...">
+                                    <input type="text" id="searchPatientPassage" class="form-control" placeholder="Tapez le code, nom ou prénom..." autocomplete="off">
                                     <input type="hidden" name="patient_id" id="patientIdPassage">
                                     <div id="selectedPatientPassage" class="alert alert-info mt-2 d-none"></div>
+                                    <div class="invalid-feedback" id="patientPassageErr">Choisissez le patient correctement !</div>
                                     @error('patient_id')<div class="text-danger small">{{ $message }}</div>@enderror
                                 </div>
                                 @else
@@ -97,15 +98,16 @@
 
                         {{-- Onglet 2 : Admission avec lit --}}
                         <div class="tab-pane fade {{ $activeTab == 'admission' ? 'show active' : '' }}" id="admission" role="tabpanel">
-                            <form method="POST" action="{{ route('mouvements.admission') }}" id="formAdmission">
+                            <form method="POST" action="{{ route('mouvements.admission') }}" id="formAdmission" novalidate>
                                 @csrf
 
                                 @if(!isset($patient) || !$patient)
                                 <div class="mb-3">
                                     <label class="form-label">Patient <span class="text-danger">*</span></label>
-                                    <input type="text" id="searchPatientAdmission" class="form-control" placeholder="Tapez le code, nom ou prénom...">
+                                    <input type="text" id="searchPatientAdmission" class="form-control" placeholder="Tapez le code, nom ou prénom..." autocomplete="off">
                                     <input type="hidden" name="patient_id" id="patientIdAdmission">
                                     <div id="selectedPatientAdmission" class="alert alert-info mt-2 d-none"></div>
+                                    <div class="invalid-feedback" id="patientAdmissionErr">Choisissez le patient correctement !</div>
                                     @error('patient_id')<div class="text-danger small">{{ $message }}</div>@enderror
                                 </div>
                                 @else
@@ -143,17 +145,18 @@
                             </form>
                         </div>
 
-                       {{-- Onglet 3 : Transfert de service --}}
+                        {{-- Onglet 3 : Transfert de service --}}
                         <div class="tab-pane fade {{ $activeTab == 'transfert' ? 'show active' : '' }}" id="transfert" role="tabpanel">
-                            <form method="POST" action="{{ route('mouvements.transfert') }}" id="formTransfert">
+                            <form method="POST" action="{{ route('mouvements.transfert') }}" id="formTransfert" novalidate>
                                 @csrf
 
                                 @if(!isset($patient) || !$patient)
                                 <div class="mb-3">
                                     <label class="form-label">Patient <span class="text-danger">*</span></label>
-                                    <input type="text" id="searchPatientTransfert" class="form-control" placeholder="Tapez le code, nom ou prénom...">
+                                    <input type="text" id="searchPatientTransfert" class="form-control" placeholder="Tapez le code, nom ou prénom..." autocomplete="off">
                                     <input type="hidden" name="patient_id" id="patientIdTransfert">
                                     <div id="selectedPatientTransfert" class="alert alert-info mt-2 d-none"></div>
+                                    <div class="invalid-feedback" id="patientTransfertErr">Choisissez le patient correctement !</div>
                                     @error('patient_id')<div class="text-danger small">{{ $message }}</div>@enderror
                                 </div>
                                 @else
@@ -166,33 +169,14 @@
 
                                 <input type="hidden" name="visite_id" id="visiteIdTransfert" value="{{ isset($visiteEnCours) && $visiteEnCours ? $visiteEnCours->id : '' }}">
 
-                                @if(isset($visiteEnCours) && $visiteEnCours)
                                 <div id="infosTransfert" class="alert alert-secondary mb-3">
                                     <i class="bi bi-info-circle me-2"></i>
-                                    <strong>Visite en cours depuis le {{ $visiteEnCours->date_debut->format('d/m/Y à H:i') }}</strong><br>
-                                    @php
-                                        $dernierMouvement = $visiteEnCours->mouvements()->latest('heure_arrivee')->first();
-                                        $litActuel = $visiteEnCours->getLitActuel();
-                                    @endphp
-                                    Service actuel: {{ $dernierMouvement && $dernierMouvement->service ? $dernierMouvement->service->nom_service : 'Non déterminé' }}<br>
-                                    Lit actuel: {{ $litActuel ? 'N°' . $litActuel->numero : 'Aucun' }}
+                                    <span id="infoMessageTransfert">Sélectionnez un patient pour voir sa situation actuelle.</span>
                                 </div>
-                                @elseif(isset($patient) && $patient)
-                                <div id="infosTransfert" class="alert alert-warning mb-3">
-                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                    <strong>Aucune visite en cours</strong><br>
-                                    Ce patient n'a pas de visite active. Pour effectuer un transfert, une visite doit être en cours.
-                                </div>
-                                @else
-                                <div id="infosTransfert" class="alert alert-secondary mb-3">
-                                    <i class="bi bi-info-circle me-2"></i>
-                                    <span id="infoMessage">Sélectionnez d'abord un patient pour voir sa situation actuelle.</span>
-                                </div>
-                                @endif
 
                                 <div class="mb-3">
                                     <label class="form-label">Nouveau service <span class="text-danger">*</span></label>
-                                    <select name="nouveau_service_id" id="serviceTransfert" class="form-select" required {{ (!isset($visiteEnCours) || !$visiteEnCours) ? 'disabled' : '' }}>
+                                    <select name="nouveau_service_id" id="serviceTransfert" class="form-select" required disabled>
                                         <option value="">-- Sélectionner un service --</option>
                                         @foreach($services as $service)
                                         <option value="{{ $service->id }}">{{ $service->nom_service }}</option>
@@ -215,7 +199,7 @@
                                     @error('note')<div class="text-danger small">{{ $message }}</div>@enderror
                                 </div>
 
-                                <button type="submit" class="btn btn-warning" {{ (!isset($visiteEnCours) || !$visiteEnCours) ? 'disabled' : '' }}>
+                                <button type="submit" class="btn btn-warning" id="btnTransfertSubmit" disabled>
                                     <i class="bi bi-arrow-left-right me-1"></i> Effectuer le transfert
                                 </button>
                             </form>
@@ -223,15 +207,16 @@
 
                         {{-- Onglet 4 : Valider la sortie --}}
                         <div class="tab-pane fade {{ $activeTab == 'sortie' ? 'show active' : '' }}" id="sortie" role="tabpanel">
-                            <form method="POST" action="{{ route('mouvements.sortie') }}" id="formSortie">
+                            <form method="POST" action="{{ route('mouvements.sortie') }}" id="formSortie" novalidate>
                                 @csrf
 
                                 @if(!isset($patient) || !$patient)
                                 <div class="mb-3">
                                     <label class="form-label">Patient <span class="text-danger">*</span></label>
-                                    <input type="text" id="searchPatientSortie" class="form-control" placeholder="Tapez le code, nom ou prénom...">
+                                    <input type="text" id="searchPatientSortie" class="form-control" placeholder="Tapez le code, nom ou prénom..." autocomplete="off">
                                     <input type="hidden" name="patient_id" id="patientIdSortie">
                                     <div id="selectedPatientSortie" class="alert alert-info mt-2 d-none"></div>
+                                    <div class="invalid-feedback" id="patientSortieErr">Choisissez le patient correctement !</div>
                                     @error('patient_id')<div class="text-danger small">{{ $message }}</div>@enderror
                                 </div>
                                 @else
@@ -244,29 +229,10 @@
 
                                 <input type="hidden" name="visite_id" id="visiteIdSortie" value="{{ isset($visiteEnCours) && $visiteEnCours ? $visiteEnCours->id : '' }}">
 
-                                @if(isset($visiteEnCours) && $visiteEnCours)
                                 <div id="infosSortie" class="alert alert-secondary mb-3">
                                     <i class="bi bi-info-circle me-2"></i>
-                                    <strong>Visite N°{{ $visiteEnCours->numero_visite }} en cours</strong><br>
-                                    Début: {{ $visiteEnCours->date_debut->format('d/m/Y à H:i') }}<br>
-                                    Durée: {{ $visiteEnCours->getDuree() }}<br>
-                                    @php
-                                        $litActuel = $visiteEnCours->getLitActuel();
-                                    @endphp
-                                    Lit actuel: {{ $litActuel ? 'N°' . $litActuel->numero : 'Aucun' }}
+                                    <span id="infoMessageSortie">Sélectionnez un patient pour voir sa situation actuelle.</span>
                                 </div>
-                                @elseif(isset($patient) && $patient)
-                                <div id="infosSortie" class="alert alert-warning mb-3">
-                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                    <strong>Aucune visite en cours</strong><br>
-                                    Ce patient n'a pas de visite active à clôturer.
-                                </div>
-                                @else
-                                <div id="infosSortie" class="alert alert-secondary mb-3">
-                                    <i class="bi bi-info-circle me-2"></i>
-                                    <span id="infoMessageSortie">Sélectionnez d'abord un patient pour voir sa situation actuelle.</span>
-                                </div>
-                                @endif
 
                                 <div class="mb-3">
                                     <label class="form-label">Note (optionnelle)</label>
@@ -274,7 +240,7 @@
                                     @error('note')<div class="text-danger small">{{ $message }}</div>@enderror
                                 </div>
 
-                                <button type="submit" class="btn btn-danger" id="btnSortie" {{ (!isset($visiteEnCours) || !$visiteEnCours) ? 'disabled' : '' }}>
+                                <button type="submit" class="btn btn-danger" id="btnSortie" disabled>
                                     <i class="bi bi-door-closed me-1"></i> Confirmer la sortie
                                 </button>
                             </form>
@@ -291,8 +257,32 @@
 // Liste des patients pour la recherche (passée depuis PHP via une variable)
 var patientsData = {!! json_encode(\App\Models\Patient::select('id', 'code_unique', 'nom', 'prenom')->get()->toArray()) !!};
 
+// Fonction pour réinitialiser l'erreur patient
+function resetPatientError(inputId, hiddenId, errId) {
+    var input = document.getElementById(inputId);
+    var errDiv = document.getElementById(errId);
+    if(input) {
+        input.classList.remove('is-invalid');
+    }
+    if(errDiv) {
+        errDiv.style.display = 'none';
+    }
+}
+
+// Fonction pour afficher l'erreur patient
+function showPatientError(inputId, errId) {
+    var input = document.getElementById(inputId);
+    var errDiv = document.getElementById(errId);
+    if(input) {
+        input.classList.add('is-invalid');
+    }
+    if(errDiv) {
+        errDiv.style.display = 'block';
+    }
+}
+
 // Fonction de recherche patient
-function setupPatientSearch(inputId, hiddenId, selectedDivId, callback) {
+function setupPatientSearch(inputId, hiddenId, selectedDivId, errId, callback) {
     var input = document.getElementById(inputId);
     if (!input) return;
 
@@ -324,6 +314,12 @@ function setupPatientSearch(inputId, hiddenId, selectedDivId, callback) {
 
     input.addEventListener('input', function() {
         updateDatalist(this.value);
+        // Réinitialiser l'erreur dès que l'utilisateur tape
+        resetPatientError(inputId, hiddenId, errId);
+    });
+
+    input.addEventListener('focus', function() {
+        resetPatientError(inputId, hiddenId, errId);
     });
 
     input.addEventListener('change', function() {
@@ -340,10 +336,14 @@ function setupPatientSearch(inputId, hiddenId, selectedDivId, callback) {
             var selectedDiv = document.getElementById(selectedDivId);
             selectedDiv.innerHTML = '<i class="bi bi-person-check me-1"></i> Patient sélectionné : <strong>' + selected.prenom + ' ' + selected.nom + '</strong> (Code: ' + selected.code_unique + ')';
             selectedDiv.classList.remove('d-none');
+            // Réinitialiser l'erreur si patient sélectionné
+            resetPatientError(inputId, hiddenId, errId);
             if (callback) callback(selected.id);
         } else if (this.value.trim() !== '') {
             document.getElementById(hiddenId).value = '';
             document.getElementById(selectedDivId).classList.add('d-none');
+            // Afficher l'erreur si la valeur n'est pas valide
+            showPatientError(inputId, errId);
             if (callback) callback(null);
         }
     });
@@ -375,55 +375,154 @@ function fetchLits(serviceId, targetSelectId) {
         });
 }
 
+// ========== FONCTIONS SPÉCIFIQUES POUR TRANSFERT ==========
+function loadPatientForTransfert(patientId) {
+    if (!patientId) {
+        var infoDiv = document.getElementById('infoMessageTransfert');
+        if (infoDiv) infoDiv.innerHTML = 'Sélectionnez un patient pour voir sa situation actuelle.';
+        var serviceSelect = document.getElementById('serviceTransfert');
+        if (serviceSelect) {
+            serviceSelect.disabled = true;
+            serviceSelect.value = '';
+        }
+        var litSelect = document.getElementById('litTransfert');
+        if (litSelect) {
+            litSelect.innerHTML = '<option value="">-- Choisissez d\'abord un service --</option>';
+            litSelect.disabled = true;
+        }
+        var btnSubmit = document.getElementById('btnTransfertSubmit');
+        if (btnSubmit) btnSubmit.disabled = true;
+        var visiteInput = document.getElementById('visiteIdTransfert');
+        if (visiteInput) visiteInput.value = '';
+        return;
+    }
+
+    fetch('/api/patients/' + patientId)
+        .then(function(response) {
+            if (!response.ok) throw new Error('Patient non trouvé');
+            return response.json();
+        })
+        .then(function(data) {
+            var infoDiv = document.getElementById('infoMessageTransfert');
+            var serviceSelect = document.getElementById('serviceTransfert');
+            var visiteInput = document.getElementById('visiteIdTransfert');
+            var btnSubmit = document.getElementById('btnTransfertSubmit');
+
+            if (data.visite_en_cours) {
+                var dateDebut = new Date(data.visite_en_cours.date_debut);
+                infoDiv.innerHTML = '<strong>Visite en cours depuis le ' + dateDebut.toLocaleString() + '</strong><br>' +
+                    'Service actuel: ' + (data.service_actuel || 'Non déterminé') + '<br>' +
+                    'Lit actuel: ' + (data.lit_actuel ? 'N°' + data.lit_actuel.numero : 'Aucun');
+                visiteInput.value = data.visite_en_cours.id;
+                serviceSelect.disabled = false;
+                btnSubmit.disabled = false;
+            } else {
+                infoDiv.innerHTML = '<strong>Aucune visite en cours</strong><br>Ce patient n\'a pas de visite active. Pour effectuer un transfert, une visite doit être en cours.';
+                visiteInput.value = '';
+                serviceSelect.disabled = true;
+                serviceSelect.value = '';
+                var litSelect = document.getElementById('litTransfert');
+                if (litSelect) {
+                    litSelect.innerHTML = '<option value="">-- Choisissez d\'abord un service --</option>';
+                    litSelect.disabled = true;
+                }
+                btnSubmit.disabled = true;
+            }
+        })
+        .catch(function(error) {
+            console.error('Erreur:', error);
+            var infoDiv = document.getElementById('infoMessageTransfert');
+            if (infoDiv) infoDiv.innerHTML = '<strong>Erreur</strong><br>Impossible de charger les informations du patient.';
+        });
+}
+
+// ========== FONCTIONS SPÉCIFIQUES POUR SORTIE ==========
+function loadPatientForSortie(patientId) {
+    if (!patientId) {
+        var infoDiv = document.getElementById('infoMessageSortie');
+        if (infoDiv) infoDiv.innerHTML = 'Sélectionnez un patient pour voir sa situation actuelle.';
+        var btnSubmit = document.getElementById('btnSortie');
+        if (btnSubmit) btnSubmit.disabled = true;
+        var visiteInput = document.getElementById('visiteIdSortie');
+        if (visiteInput) visiteInput.value = '';
+        return;
+    }
+
+    fetch('/api/patients/' + patientId)
+        .then(function(response) {
+            if (!response.ok) throw new Error('Patient non trouvé');
+            return response.json();
+        })
+        .then(function(data) {
+            var infoDiv = document.getElementById('infoMessageSortie');
+            var btnSubmit = document.getElementById('btnSortie');
+            var visiteInput = document.getElementById('visiteIdSortie');
+
+            if (data.visite_en_cours) {
+                var dateDebut = new Date(data.visite_en_cours.date_debut);
+                infoDiv.innerHTML = '<strong>Visite N°' + data.visite_en_cours.numero_visite + ' en cours</strong><br>' +
+                    'Début: ' + dateDebut.toLocaleString() + '<br>' +
+                    'Lit actuel: ' + (data.lit_actuel ? 'N°' + data.lit_actuel.numero : 'Aucun');
+                visiteInput.value = data.visite_en_cours.id;
+                btnSubmit.disabled = false;
+            } else {
+                infoDiv.innerHTML = '<strong>Aucune visite en cours</strong><br>Ce patient n\'a pas de visite active à clôturer.';
+                visiteInput.value = '';
+                btnSubmit.disabled = true;
+            }
+        })
+        .catch(function(error) {
+            console.error('Erreur:', error);
+            var infoDiv = document.getElementById('infoMessageSortie');
+            if (infoDiv) infoDiv.innerHTML = '<strong>Erreur</strong><br>Impossible de charger les informations du patient.';
+        });
+}
+
+// Fonction de validation avant soumission pour chaque formulaire
+function validatePatientSelection(formId, inputId, hiddenId, errId) {
+    var form = document.getElementById(formId);
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+        var hiddenInput = document.getElementById(hiddenId);
+        var patientId = hiddenInput ? hiddenInput.value : '';
+        var inputField = document.getElementById(inputId);
+
+        if (!patientId || patientId === '') {
+            e.preventDefault();
+            showPatientError(inputId, errId);
+        } else {
+            resetPatientError(inputId, hiddenId, errId);
+        }
+    });
+}
+
 // Initialisation des recherches patient
-setupPatientSearch('searchPatientPassage', 'patientIdPassage', 'selectedPatientPassage');
-setupPatientSearch('searchPatientAdmission', 'patientIdAdmission', 'selectedPatientAdmission');
-setupPatientSearch('searchPatientTransfert', 'patientIdTransfert', 'selectedPatientTransfert', function(patientId) {
-    if (patientId) {
-        fetch('/patients/' + patientId)
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                var message = document.getElementById('infoMessage');
-                if (data.visite_en_cours) {
-                    message.innerHTML = '<strong>Visite en cours depuis le ' + new Date(data.visite_en_cours.date_debut).toLocaleString() + '</strong><br>' +
-                        'Service actuel: ' + (data.service_actuel || 'Non déterminé') + '<br>' +
-                        'Lit actuel: ' + (data.lit_actuel ? 'N°' + data.lit_actuel.numero : 'Aucun');
-                    document.getElementById('visiteIdTransfert').value = data.visite_en_cours.id;
-                    document.getElementById('serviceTransfert').disabled = false;
-                } else {
-                    message.innerHTML = '<strong>Aucune visite en cours</strong><br>Ce patient n\'a pas de visite active.';
-                    document.getElementById('visiteIdTransfert').value = '';
-                    document.getElementById('serviceTransfert').disabled = true;
-                    document.getElementById('serviceTransfert').value = '';
-                    document.getElementById('litTransfert').innerHTML = '<option value="">-- Choisissez d\'abord un service --</option>';
-                    document.getElementById('litTransfert').disabled = true;
-                }
-            })
-            .catch(function(e) { console.error(e); });
+setupPatientSearch('searchPatientPassage', 'patientIdPassage', 'selectedPatientPassage', 'patientPassageErr');
+setupPatientSearch('searchPatientAdmission', 'patientIdAdmission', 'selectedPatientAdmission', 'patientAdmissionErr');
+setupPatientSearch('searchPatientTransfert', 'patientIdTransfert', 'selectedPatientTransfert', 'patientTransfertErr', loadPatientForTransfert);
+setupPatientSearch('searchPatientSortie', 'patientIdSortie', 'selectedPatientSortie', 'patientSortieErr', loadPatientForSortie);
+
+// Initialisation des validations de soumission
+validatePatientSelection('formPassage', 'searchPatientPassage', 'patientIdPassage', 'patientPassageErr');
+validatePatientSelection('formAdmission', 'searchPatientAdmission', 'patientIdAdmission', 'patientAdmissionErr');
+validatePatientSelection('formTransfert', 'searchPatientTransfert', 'patientIdTransfert', 'patientTransfertErr');
+validatePatientSelection('formSortie', 'searchPatientSortie', 'patientIdSortie', 'patientSortieErr');
+
+// Si un patient est déjà pré-sélectionné (depuis la page patient)
+if (document.getElementById('patientIdTransfertHidden')) {
+    var preSelectedPatientId = document.getElementById('patientIdTransfertHidden').value;
+    if (preSelectedPatientId) {
+        loadPatientForTransfert(preSelectedPatientId);
     }
-});
-setupPatientSearch('searchPatientSortie', 'patientIdSortie', 'selectedPatientSortie', function(patientId) {
-    if (patientId) {
-        fetch('/patients/' + patientId)
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                var message = document.getElementById('infoMessageSortie');
-                var btn = document.getElementById('btnSortie');
-                if (data.visite_en_cours) {
-                    message.innerHTML = '<strong>Visite N°' + data.visite_en_cours.numero_visite + ' en cours</strong><br>' +
-                        'Début: ' + new Date(data.visite_en_cours.date_debut).toLocaleString() + '<br>' +
-                        'Lit actuel: ' + (data.lit_actuel ? 'N°' + data.lit_actuel.numero : 'Aucun');
-                    document.getElementById('visiteIdSortie').value = data.visite_en_cours.id;
-                    btn.disabled = false;
-                } else {
-                    message.innerHTML = '<strong>Aucune visite en cours</strong><br>Ce patient n\'a pas de visite active à clôturer.';
-                    document.getElementById('visiteIdSortie').value = '';
-                    btn.disabled = true;
-                }
-            })
-            .catch(function(e) { console.error(e); });
+}
+
+if (document.getElementById('patientIdSortieHidden')) {
+    var preSelectedPatientIdSortie = document.getElementById('patientIdSortieHidden').value;
+    if (preSelectedPatientIdSortie) {
+        loadPatientForSortie(preSelectedPatientIdSortie);
     }
-});
+}
 
 // Admission: chargement des lits au changement de service
 var serviceAdmission = document.getElementById('serviceAdmission');
@@ -458,6 +557,12 @@ if (serviceTransfert) {
 <style>
     input[list]::-webkit-calendar-picker-indicator {
         display: none;
+    }
+    .invalid-feedback {
+        display: none;
+    }
+    .is-invalid ~ .invalid-feedback {
+        display: block;
     }
 </style>
 @endif
