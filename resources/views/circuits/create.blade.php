@@ -66,7 +66,7 @@
                                     <input type="text" id="searchPatientPassage" class="form-control" placeholder="Tapez le code, nom ou prénom..." autocomplete="off">
                                     <input type="hidden" name="patient_id" id="patientIdPassage">
                                     <div id="selectedPatientPassage" class="alert alert-info mt-2 d-none"></div>
-                                    <div class="invalid-feedback" id="patientPassageErr">Choisissez le patient correctement !</div>
+                                    <div class="invalid-feedback" id="patientPassageErr">Veuillez sélectionner un patient valide.</div>
                                     @error('patient_id')<div class="text-danger small">{{ $message }}</div>@enderror
                                 </div>
                                 @else
@@ -107,7 +107,7 @@
                                     <input type="text" id="searchPatientAdmission" class="form-control" placeholder="Tapez le code, nom ou prénom..." autocomplete="off">
                                     <input type="hidden" name="patient_id" id="patientIdAdmission">
                                     <div id="selectedPatientAdmission" class="alert alert-info mt-2 d-none"></div>
-                                    <div class="invalid-feedback" id="patientAdmissionErr">Choisissez le patient correctement !</div>
+                                    <div class="invalid-feedback" id="patientAdmissionErr">Veuillez sélectionner un patient valide.</div>
                                     @error('patient_id')<div class="text-danger small">{{ $message }}</div>@enderror
                                 </div>
                                 @else
@@ -156,7 +156,7 @@
                                     <input type="text" id="searchPatientTransfert" class="form-control" placeholder="Tapez le code, nom ou prénom..." autocomplete="off">
                                     <input type="hidden" name="patient_id" id="patientIdTransfert">
                                     <div id="selectedPatientTransfert" class="alert alert-info mt-2 d-none"></div>
-                                    <div class="invalid-feedback" id="patientTransfertErr">Choisissez le patient correctement !</div>
+                                    <div class="invalid-feedback" id="patientTransfertErr">Veuillez sélectionner un patient valide.</div>
                                     @error('patient_id')<div class="text-danger small">{{ $message }}</div>@enderror
                                 </div>
                                 @else
@@ -216,7 +216,7 @@
                                     <input type="text" id="searchPatientSortie" class="form-control" placeholder="Tapez le code, nom ou prénom..." autocomplete="off">
                                     <input type="hidden" name="patient_id" id="patientIdSortie">
                                     <div id="selectedPatientSortie" class="alert alert-info mt-2 d-none"></div>
-                                    <div class="invalid-feedback" id="patientSortieErr">Choisissez le patient correctement !</div>
+                                    <div class="invalid-feedback" id="patientSortieErr">Veuillez sélectionner un patient valide.</div>
                                     @error('patient_id')<div class="text-danger small">{{ $message }}</div>@enderror
                                 </div>
                                 @else
@@ -254,31 +254,23 @@
 </div>
 
 <script>
-// Liste des patients pour la recherche (passée depuis PHP via une variable)
+// Liste des patients pour la recherche
 var patientsData = {!! json_encode(\App\Models\Patient::select('id', 'code_unique', 'nom', 'prenom')->get()->toArray()) !!};
 
 // Fonction pour réinitialiser l'erreur patient
 function resetPatientError(inputId, hiddenId, errId) {
     var input = document.getElementById(inputId);
     var errDiv = document.getElementById(errId);
-    if(input) {
-        input.classList.remove('is-invalid');
-    }
-    if(errDiv) {
-        errDiv.style.display = 'none';
-    }
+    if(input) input.classList.remove('is-invalid');
+    if(errDiv) errDiv.style.display = 'none';
 }
 
 // Fonction pour afficher l'erreur patient
 function showPatientError(inputId, errId) {
     var input = document.getElementById(inputId);
     var errDiv = document.getElementById(errId);
-    if(input) {
-        input.classList.add('is-invalid');
-    }
-    if(errDiv) {
-        errDiv.style.display = 'block';
-    }
+    if(input) input.classList.add('is-invalid');
+    if(errDiv) errDiv.style.display = 'block';
 }
 
 // Fonction de recherche patient
@@ -314,7 +306,6 @@ function setupPatientSearch(inputId, hiddenId, selectedDivId, errId, callback) {
 
     input.addEventListener('input', function() {
         updateDatalist(this.value);
-        // Réinitialiser l'erreur dès que l'utilisateur tape
         resetPatientError(inputId, hiddenId, errId);
     });
 
@@ -336,13 +327,11 @@ function setupPatientSearch(inputId, hiddenId, selectedDivId, errId, callback) {
             var selectedDiv = document.getElementById(selectedDivId);
             selectedDiv.innerHTML = '<i class="bi bi-person-check me-1"></i> Patient sélectionné : <strong>' + selected.prenom + ' ' + selected.nom + '</strong> (Code: ' + selected.code_unique + ')';
             selectedDiv.classList.remove('d-none');
-            // Réinitialiser l'erreur si patient sélectionné
             resetPatientError(inputId, hiddenId, errId);
             if (callback) callback(selected.id);
         } else if (this.value.trim() !== '') {
             document.getElementById(hiddenId).value = '';
             document.getElementById(selectedDivId).classList.add('d-none');
-            // Afficher l'erreur si la valeur n'est pas valide
             showPatientError(inputId, errId);
             if (callback) callback(null);
         }
@@ -375,24 +364,19 @@ function fetchLits(serviceId, targetSelectId) {
         });
 }
 
-// ========== FONCTIONS SPÉCIFIQUES POUR TRANSFERT ==========
+// Fonctions spécifiques pour transfert
 function loadPatientForTransfert(patientId) {
+    var infoDiv = document.getElementById('infoMessageTransfert');
+    var serviceSelect = document.getElementById('serviceTransfert');
+    var litSelect = document.getElementById('litTransfert');
+    var btnSubmit = document.getElementById('btnTransfertSubmit');
+    var visiteInput = document.getElementById('visiteIdTransfert');
+
     if (!patientId) {
-        var infoDiv = document.getElementById('infoMessageTransfert');
         if (infoDiv) infoDiv.innerHTML = 'Sélectionnez un patient pour voir sa situation actuelle.';
-        var serviceSelect = document.getElementById('serviceTransfert');
-        if (serviceSelect) {
-            serviceSelect.disabled = true;
-            serviceSelect.value = '';
-        }
-        var litSelect = document.getElementById('litTransfert');
-        if (litSelect) {
-            litSelect.innerHTML = '<option value="">-- Choisissez d\'abord un service --</option>';
-            litSelect.disabled = true;
-        }
-        var btnSubmit = document.getElementById('btnTransfertSubmit');
+        if (serviceSelect) { serviceSelect.disabled = true; serviceSelect.value = ''; }
+        if (litSelect) { litSelect.innerHTML = '<option value="">-- Choisissez d\'abord un service --</option>'; litSelect.disabled = true; }
         if (btnSubmit) btnSubmit.disabled = true;
-        var visiteInput = document.getElementById('visiteIdTransfert');
         if (visiteInput) visiteInput.value = '';
         return;
     }
@@ -403,11 +387,6 @@ function loadPatientForTransfert(patientId) {
             return response.json();
         })
         .then(function(data) {
-            var infoDiv = document.getElementById('infoMessageTransfert');
-            var serviceSelect = document.getElementById('serviceTransfert');
-            var visiteInput = document.getElementById('visiteIdTransfert');
-            var btnSubmit = document.getElementById('btnTransfertSubmit');
-
             if (data.visite_en_cours) {
                 var dateDebut = new Date(data.visite_en_cours.date_debut);
                 infoDiv.innerHTML = '<strong>Visite en cours depuis le ' + dateDebut.toLocaleString() + '</strong><br>' +
@@ -421,29 +400,26 @@ function loadPatientForTransfert(patientId) {
                 visiteInput.value = '';
                 serviceSelect.disabled = true;
                 serviceSelect.value = '';
-                var litSelect = document.getElementById('litTransfert');
-                if (litSelect) {
-                    litSelect.innerHTML = '<option value="">-- Choisissez d\'abord un service --</option>';
-                    litSelect.disabled = true;
-                }
+                litSelect.innerHTML = '<option value="">-- Choisissez d\'abord un service --</option>';
+                litSelect.disabled = true;
                 btnSubmit.disabled = true;
             }
         })
         .catch(function(error) {
             console.error('Erreur:', error);
-            var infoDiv = document.getElementById('infoMessageTransfert');
             if (infoDiv) infoDiv.innerHTML = '<strong>Erreur</strong><br>Impossible de charger les informations du patient.';
         });
 }
 
-// ========== FONCTIONS SPÉCIFIQUES POUR SORTIE ==========
+// Fonctions spécifiques pour sortie
 function loadPatientForSortie(patientId) {
+    var infoDiv = document.getElementById('infoMessageSortie');
+    var btnSubmit = document.getElementById('btnSortie');
+    var visiteInput = document.getElementById('visiteIdSortie');
+
     if (!patientId) {
-        var infoDiv = document.getElementById('infoMessageSortie');
         if (infoDiv) infoDiv.innerHTML = 'Sélectionnez un patient pour voir sa situation actuelle.';
-        var btnSubmit = document.getElementById('btnSortie');
         if (btnSubmit) btnSubmit.disabled = true;
-        var visiteInput = document.getElementById('visiteIdSortie');
         if (visiteInput) visiteInput.value = '';
         return;
     }
@@ -454,10 +430,6 @@ function loadPatientForSortie(patientId) {
             return response.json();
         })
         .then(function(data) {
-            var infoDiv = document.getElementById('infoMessageSortie');
-            var btnSubmit = document.getElementById('btnSortie');
-            var visiteInput = document.getElementById('visiteIdSortie');
-
             if (data.visite_en_cours) {
                 var dateDebut = new Date(data.visite_en_cours.date_debut);
                 infoDiv.innerHTML = '<strong>Visite N°' + data.visite_en_cours.numero_visite + ' en cours</strong><br>' +
@@ -473,55 +445,25 @@ function loadPatientForSortie(patientId) {
         })
         .catch(function(error) {
             console.error('Erreur:', error);
-            var infoDiv = document.getElementById('infoMessageSortie');
             if (infoDiv) infoDiv.innerHTML = '<strong>Erreur</strong><br>Impossible de charger les informations du patient.';
         });
 }
 
-// Fonction de validation avant soumission pour chaque formulaire
-function validatePatientSelection(formId, inputId, hiddenId, errId) {
-    var form = document.getElementById(formId);
-    if (!form) return;
-
-    form.addEventListener('submit', function(e) {
-        var hiddenInput = document.getElementById(hiddenId);
-        var patientId = hiddenInput ? hiddenInput.value : '';
-        var inputField = document.getElementById(inputId);
-
-        if (!patientId || patientId === '') {
-            e.preventDefault();
-            showPatientError(inputId, errId);
-        } else {
-            resetPatientError(inputId, hiddenId, errId);
-        }
-    });
-}
-
-// Initialisation des recherches patient
+// Initialisation des recherches patient (sans validation automatique)
 setupPatientSearch('searchPatientPassage', 'patientIdPassage', 'selectedPatientPassage', 'patientPassageErr');
 setupPatientSearch('searchPatientAdmission', 'patientIdAdmission', 'selectedPatientAdmission', 'patientAdmissionErr');
 setupPatientSearch('searchPatientTransfert', 'patientIdTransfert', 'selectedPatientTransfert', 'patientTransfertErr', loadPatientForTransfert);
 setupPatientSearch('searchPatientSortie', 'patientIdSortie', 'selectedPatientSortie', 'patientSortieErr', loadPatientForSortie);
 
-// Initialisation des validations de soumission
-validatePatientSelection('formPassage', 'searchPatientPassage', 'patientIdPassage', 'patientPassageErr');
-validatePatientSelection('formAdmission', 'searchPatientAdmission', 'patientIdAdmission', 'patientAdmissionErr');
-validatePatientSelection('formTransfert', 'searchPatientTransfert', 'patientIdTransfert', 'patientTransfertErr');
-validatePatientSelection('formSortie', 'searchPatientSortie', 'patientIdSortie', 'patientSortieErr');
-
-// Si un patient est déjà pré-sélectionné (depuis la page patient)
+// Si un patient est déjà pré-sélectionné
 if (document.getElementById('patientIdTransfertHidden')) {
     var preSelectedPatientId = document.getElementById('patientIdTransfertHidden').value;
-    if (preSelectedPatientId) {
-        loadPatientForTransfert(preSelectedPatientId);
-    }
+    if (preSelectedPatientId) loadPatientForTransfert(preSelectedPatientId);
 }
 
 if (document.getElementById('patientIdSortieHidden')) {
     var preSelectedPatientIdSortie = document.getElementById('patientIdSortieHidden').value;
-    if (preSelectedPatientIdSortie) {
-        loadPatientForSortie(preSelectedPatientIdSortie);
-    }
+    if (preSelectedPatientIdSortie) loadPatientForSortie(preSelectedPatientIdSortie);
 }
 
 // Admission: chargement des lits au changement de service
