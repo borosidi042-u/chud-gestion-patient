@@ -36,12 +36,6 @@ class User extends Authenticatable
             default => 'Agent d\'accueil',
         };
     }
-
-    public function factures()
-    {
-        return $this->hasMany(Facture::class);
-    }
-
     public function circuits()
     {
         return $this->hasMany(Circuit::class);

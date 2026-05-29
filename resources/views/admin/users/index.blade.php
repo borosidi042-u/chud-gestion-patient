@@ -80,8 +80,8 @@
                                     <i class="bi bi-x-circle me-1"></i>Refuser
                                 </button>
                             </form>
-                        </td>
-                    </tr>
+                         </td>
+                     </tr>
                     @endforeach
                 </tbody>
             </table>
@@ -116,10 +116,10 @@
                 <tbody id="userTableBody">
                     @foreach($approvedUsers as $u)
                     @php
-                        // Compter les données liées à cet utilisateur
-                        $userFacturesCount = $u->factures()->count();
+                        // Compter uniquement les données liées à cet utilisateur (circuits/mouvements)
                         $userCircuitsCount = $u->circuits()->count();
-                        $hasData = ($userFacturesCount > 0 || $userCircuitsCount > 0);
+                        $userMouvementsCount = $u->mouvements()->count();
+                        $hasData = ($userCircuitsCount > 0 || $userMouvementsCount > 0);
                     @endphp
                     <tr>
                         <td>
@@ -137,7 +137,7 @@
                                     @endif
                                 </div>
                             </div>
-                        </td>
+                         </td>
                         <td style="color:var(--muted);font-size:.85rem">{{ $u->email }}</td>
                         <td>
                             <span style="border-radius:20px;padding:4px 12px;font-size:.72rem;font-weight:600;
@@ -164,14 +164,14 @@
                                     Agent d'accueil
                                 @endif
                             </span>
-                        </td>
+                         </td>
                         <td>
                             @if($u->approved)
                             <span style="font-size:.72rem;color:var(--green)"><i class="bi bi-check-circle-fill me-1"></i>Validé</span>
                             @else
                             <span style="font-size:.72rem;color:var(--amber)"><i class="bi bi-clock-fill me-1"></i>En attente</span>
                             @endif
-                        </td>
+                         </td>
                         <td style="font-size:.82rem;color:var(--muted)">{{ $u->created_at->format('d/m/Y') }}</td>
                         <td class="text-end">
                             @if($u->id !== Auth::id())
@@ -214,7 +214,7 @@
                                 @if($hasData)
                                     <a href="{{ route('admin.users.transfer.form', $u->id) }}"
                                        class="btn btn-sm btn-outline-warning"
-                                       title="Ce compte a {{ $userFacturesCount }} facture(s) et {{ $userCircuitsCount }} passage(s). Transférer avant suppression">
+                                       title="Ce compte a {{ $userCircuitsCount }} passage(s) et {{ $userMouvementsCount }} mouvement(s). Transférer avant suppression">
                                         <i class="bi bi-shuffle me-1"></i>Transférer
                                     </a>
                                 @else
@@ -230,8 +230,8 @@
                             @else
                             <span style="font-size:.78rem;color:var(--muted)">—</span>
                             @endif
-                        </td>
-                    </tr>
+                         </td>
+                     </tr>
                     @endforeach
                 </tbody>
             </table>

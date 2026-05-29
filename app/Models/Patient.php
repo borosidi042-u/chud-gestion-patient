@@ -25,11 +25,6 @@ class Patient extends Model
         return $this->hasMany(Circuit::class);
     }
 
-    public function factures()
-    {
-        return $this->hasMany(Facture::class);
-    }
-
     public function visites()
     {
         return $this->hasMany(Visite::class);

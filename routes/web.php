@@ -5,7 +5,6 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PatientController;
-use App\Http\Controllers\FactureController;
 use App\Http\Controllers\CircuitController;
 use App\Http\Controllers\LitController;
 use App\Http\Controllers\ProfileController;

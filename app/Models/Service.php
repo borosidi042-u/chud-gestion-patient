@@ -19,11 +19,6 @@ class Service extends Model
         return $this->hasMany(Circuit::class);
     }
 
-    public function factures()
-    {
-        return $this->hasMany(Facture::class);
-    }
-
     public function salles()
     {
         return $this->hasMany(Salle::class);
