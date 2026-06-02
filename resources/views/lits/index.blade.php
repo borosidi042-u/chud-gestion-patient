@@ -12,10 +12,11 @@
         <a href="{{ route('admin.lits.create') }}" class="btn btn-primary btn-sm me-2">
             <i class="bi bi-plus-circle me-1"></i>Ajouter un lit
         </a>
+        @endif
+        {{-- Transfert accessible à tous --}}
         <a href="{{ route('lits.transfert.form') }}" class="btn btn-warning btn-sm">
             <i class="bi bi-arrow-left-right me-1"></i>Transférer un lit
         </a>
-        @endif
     </div>
 </div>
 
@@ -113,11 +114,24 @@
                                 <small>Code: {{ $lit->patient->code_unique }}</small>
                             </div>
                             @endif
+
+                            {{-- Actions pour admin (uniquement si lit non occupé) --}}
                             @if(Auth::user()->role === 'admin' && $lit->statut !== 'occupe')
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalStatut{{ $lit->id }}">
-                                    <i class="bi bi-pencil me-1"></i>Changer statut
+                            <div class="mt-2 d-flex flex-wrap justify-content-center gap-1">
+                                {{-- Bouton Changer statut --}}
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalStatut{{ $lit->id }}" title="Changer le statut">
+                                    <i class="bi bi-pencil-square"></i>
                                 </button>
+
+                                {{-- Bouton Modifier le lit --}}
+                                <a href="{{ route('admin.lits.edit', $lit) }}" class="btn btn-sm btn-outline-primary" title="Modifier le lit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+
+                                {{-- Bouton Supprimer le lit --}}
+                                <a href="{{ route('admin.lits.delete', $lit) }}" class="btn btn-sm btn-outline-danger" title="Supprimer le lit" onclick="return confirm('Supprimer définitivement ce lit ?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
                             </div>
                             @endif
                         </div>
@@ -135,7 +149,7 @@
 </div>
 @endforeach
 
-{{-- Modals pour changer le statut (placés à la fin du body pour éviter les problèmes de positionnement) --}}
+{{-- Modals pour changer le statut (placés à la fin du body) --}}
 @foreach($services as $service)
     @foreach($service->salles as $salle)
         @foreach($salle->lits as $lit)
@@ -186,9 +200,8 @@
 
 @section('scripts')
 <script>
-// Stabiliser les modals - éviter les problèmes de positionnement
+// Stabiliser les modals
 document.addEventListener('DOMContentLoaded', function() {
-    // Forcer Bootstrap à bien initialiser les modals
     var modalElements = document.querySelectorAll('.modal');
     modalElements.forEach(function(modalEl) {
         var modal = new bootstrap.Modal(modalEl, {
@@ -197,7 +210,6 @@ document.addEventListener('DOMContentLoaded', function() {
             focus: true
         });
 
-        // Nettoyer le modal à la fermeture
         modalEl.addEventListener('hidden.bs.modal', function() {
             document.body.classList.remove('modal-open');
             var backdrops = document.querySelectorAll('.modal-backdrop');
@@ -208,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Éviter la soumission multiple des formulaires
+// Éviter la soumission multiple
 document.querySelectorAll('form[id^="formStatut"]').forEach(function(form) {
     form.addEventListener('submit', function(e) {
         var submitBtn = this.querySelector('button[type="submit"]');
@@ -221,12 +233,11 @@ document.querySelectorAll('form[id^="formStatut"]').forEach(function(form) {
 </script>
 
 <style>
-/* Styles pour les cartes lits */
 .lit-card {
     transition: transform 0.2s ease;
 }
 .lit-card:hover {
-    transform: translateY(-3px);
+    transform: translateY(-5px);
 }
 .lit-card.libre {
     border-left: 4px solid #10B981;
@@ -242,7 +253,6 @@ document.querySelectorAll('form[id^="formStatut"]').forEach(function(form) {
     opacity: 0.7;
 }
 
-/* Stabiliser les modals */
 .modal {
     background-color: rgba(0,0,0,0.5);
 }
@@ -254,6 +264,10 @@ document.querySelectorAll('form[id^="formStatut"]').forEach(function(form) {
 }
 .modal.show .modal-dialog {
     transform: translate(0, 0);
+}
+
+.btn-sm i {
+    font-size: 0.8rem;
 }
 </style>
 @endsection

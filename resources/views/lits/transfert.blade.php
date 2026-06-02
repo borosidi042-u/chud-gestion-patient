@@ -13,6 +13,12 @@
                 <div class="alert alert-danger animate__animated animate__shakeX">{{ session('error') }}</div>
                 @endif
 
+                @if($errors->any())
+                <div class="alert alert-danger mb-3">
+                    <ul class="mb-0 ps-3">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
+                </div>
+                @endif
+
                 <form method="POST" action="{{ route('lits.transfert') }}" id="transfertForm">
                     @csrf
 
@@ -73,7 +79,6 @@ document.getElementById('salleSelect').addEventListener('change', function() {
             infoDiv.innerHTML = '<span class="text-danger">⚠️ Cette salle a atteint sa capacité maximale (' + capacite + ' lits). Impossible d\'y transférer un lit.</span>';
             document.getElementById('btnTransfert').disabled = true;
         } else {
-            // Vérifier aussi si le numéro du lit existe déjà
             const litSelect = document.getElementById('litSelect');
             const litOption = litSelect.options[litSelect.selectedIndex];
             const litNumero = litOption ? litOption.dataset.numero : null;
@@ -85,7 +90,6 @@ document.getElementById('salleSelect').addEventListener('change', function() {
 });
 
 document.getElementById('litSelect').addEventListener('change', function() {
-    // Re-déclencher la vérification de la salle
     document.getElementById('salleSelect').dispatchEvent(new Event('change'));
 });
 </script>

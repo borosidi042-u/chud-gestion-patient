@@ -37,7 +37,7 @@
                         <input type="text" name="nom" id="nom" class="form-control @error('nom') is-invalid @enderror"
                                value="{{ old('nom') }}" placeholder="Ex: Salle A, Salle d'attente, Réanimation...">
                         <div class="invalid-feedback" id="nomErr">Le nom de la salle est requis.</div>
-                        @error('nom')<div class="text-danger small">{{ $message }}</div>@enderror
+                        @error('nom')<div class="text-green small">{{ $message }}</div>@enderror
                     </div>
 
                     <div class="mb-3">

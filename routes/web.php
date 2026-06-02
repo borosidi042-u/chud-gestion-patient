@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
     // Transfert de lit (admin)
     Route::get('/lits/transfert', [LitController::class, 'transfertForm'])->name('lits.transfert.form');
     Route::post('/lits/transfert', [LitController::class, 'transfertLit'])->name('lits.transfert');
+    Route::get('/lits/{lit}/supprimer', [LitController::class, 'delete'])->name('lits.delete');
 
     // Administration
     Route::prefix('admin')->name('admin.')->group(function () {
@@ -104,5 +105,6 @@ Route::middleware('auth')->group(function () {
         Route::put('/lits/{lit}',                  [LitController::class,'update'])->name('lits.update');
         Route::delete('/lits/{lit}',               [LitController::class,'destroy'])->name('lits.destroy');
         Route::post('/lits/{lit}/statut',          [LitController::class,'changerStatut'])->name('lits.statut');
+        Route::get('/lits/{lit}/supprimer', [LitController::class, 'delete'])->name('lits.delete');
     });
 });

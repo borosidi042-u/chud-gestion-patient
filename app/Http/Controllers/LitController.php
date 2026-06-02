@@ -30,8 +30,7 @@ class LitController extends Controller
 
     public function transfertForm()
     {
-        if (Auth::user()->role !== 'admin') abort(403);
-
+        // Suppression de la vérification admin - accessible à tous
         $litsLibres = Lit::where('statut', 'libre')->with(['salle.service'])->get();
         $salles = Salle::with('service')->orderBy('nom')->get();
 
@@ -40,8 +39,7 @@ class LitController extends Controller
 
     public function transfertLit(Request $request)
     {
-        if (Auth::user()->role !== 'admin') abort(403);
-
+        // Suppression de la vérification admin - accessible à tous
         $request->validate([
             'lit_id' => 'required|exists:lits,id',
             'salle_id' => 'required|exists:salles,id',
@@ -229,5 +227,11 @@ class LitController extends Controller
 
         return redirect()->route('lits.index')
             ->with('success', "Statut du lit N°{$lit->numero} mis à jour.");
+    }
+    public function delete(Lit $lit)
+    {
+        if (Auth::user()->role !== 'admin') abort(403);
+
+        return view('lits.delete', compact('lit'));
     }
 }

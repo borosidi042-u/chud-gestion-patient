@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title','Modifier un passage')
+@section('title', 'Modifier un mouvement')
 @section('content')
 
 <div class="row justify-content-center">
     <div class="col-lg-6">
         <div class="card animate__animated animate__fadeIn">
             <div class="card-header">
-                <i class="bi bi-pencil me-2" style="color:var(--amber)"></i> Modifier le passage
+                <i class="bi bi-pencil me-2" style="color:var(--amber)"></i> Modifier le mouvement
             </div>
             <div class="card-body">
                 @if($errors->any())
@@ -24,7 +24,8 @@
                 </div>
 
                 <form method="POST" action="{{ route('circuits.update', $circuit) }}">
-                    @csrf @method('PUT')
+                    @csrf
+                    @method('PUT')
 
                     <div class="mb-4">
                         <label class="form-label">Service <span class="text-danger">*</span></label>
@@ -38,40 +39,15 @@
                         </select>
                     </div>
 
-                    <div class="mb-4">
-                        <div class="alert alert-info py-2 mb-3" style="font-size:.82rem">
-                            <i class="bi bi-info-circle me-1"></i>
-                            @if($circuit->is_entry)
-                                Ce circuit est marqué comme <strong>Début de visite</strong> (automatique).
-                            @else
-                                Ce circuit est un passage intermédiaire.
-                            @endif
-                        </div>
-
-                        <div class="form-check">
-                            <input type="checkbox" name="is_exit" id="is_exit" value="1"
-                                   class="form-check-input" {{ $circuit->is_exit ? 'checked' : '' }}
-                                   {{ isset($isLastCircuit) && $isLastCircuit ? '' : 'disabled' }}>
-                            <label class="form-check-label" for="is_exit">
-                                <i class="bi bi-stop-circle-fill text-danger me-1"></i>
-                                Fin de la visite (Sortie de l'hôpital)
-                            </label>
-                        </div>
-                        <div class="field-hint mt-2">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Seul le dernier circuit d'une visite peut être marqué comme "Fin de visite".<br>
-                            Le début de la visite est automatique (premier circuit du patient).
-                        </div>
-                        @error('is_exit')
-                        <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-
-                        @if(isset($isLastCircuit) && !$isLastCircuit && isset($nextCircuit) && $nextCircuit && $nextCircuit->is_entry)
-                        <div class="alert alert-warning mt-2 py-2 small">
-                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                            Attention : Un circuit existe après celui-ci qui marque le début d'une nouvelle visite.
-                            Si vous désactivez "Fin de visite", les circuits suivants rejoindront cette visite.
-                        </div>
+                    <div class="alert alert-info py-2 mb-4" style="font-size:.82rem">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Type de mouvement :
+                        @if($circuit->is_entry)
+                            <strong class="text-success">Admission (entrée)</strong>
+                        @elseif($circuit->is_exit)
+                            <strong class="text-danger">Sortie</strong>
+                        @else
+                            <strong class="text-warning">Passage / Transfert</strong>
                         @endif
                     </div>
 
