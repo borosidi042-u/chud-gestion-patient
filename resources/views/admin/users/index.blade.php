@@ -80,8 +80,8 @@
                                     <i class="bi bi-x-circle me-1"></i>Refuser
                                 </button>
                             </form>
-                         </td>
-                     </tr>
+                        </td>
+                    </tr>
                     @endforeach
                 </tbody>
             </table>
@@ -115,12 +115,6 @@
                 </thead>
                 <tbody id="userTableBody">
                     @foreach($approvedUsers as $u)
-                    @php
-                        // Compter uniquement les données liées à cet utilisateur (circuits/mouvements)
-                        $userCircuitsCount = $u->circuits()->count();
-                        $userMouvementsCount = $u->mouvements()->count();
-                        $hasData = ($userCircuitsCount > 0 || $userMouvementsCount > 0);
-                    @endphp
                     <tr>
                         <td>
                             <div class="d-flex align-items-center gap-2">
@@ -137,7 +131,7 @@
                                     @endif
                                 </div>
                             </div>
-                         </td>
+                        </td>
                         <td style="color:var(--muted);font-size:.85rem">{{ $u->email }}</td>
                         <td>
                             <span style="border-radius:20px;padding:4px 12px;font-size:.72rem;font-weight:600;
@@ -164,14 +158,14 @@
                                     Agent d'accueil
                                 @endif
                             </span>
-                         </td>
+                        </td>
                         <td>
                             @if($u->approved)
                             <span style="font-size:.72rem;color:var(--green)"><i class="bi bi-check-circle-fill me-1"></i>Validé</span>
                             @else
                             <span style="font-size:.72rem;color:var(--amber)"><i class="bi bi-clock-fill me-1"></i>En attente</span>
                             @endif
-                         </td>
+                        </td>
                         <td style="font-size:.82rem;color:var(--muted)">{{ $u->created_at->format('d/m/Y') }}</td>
                         <td class="text-end">
                             @if($u->id !== Auth::id())
@@ -200,38 +194,30 @@
                                 {{-- Changer rôle --}}
                                 <form method="POST" action="{{ route('admin.users.role', $u->id) }}" class="d-inline">
                                     @csrf
-                                    <input type="hidden" name="role" value="{{ $u->role==='admin'?'user':'admin' }}">
+                                    <input type="hidden" name="role" value="{{ $u->role==='admin' ? 'user' : 'admin' }}">
                                     <button type="submit"
-                                            class="btn btn-sm {{ $u->role==='admin'?'btn-outline-info':'btn-outline-primary' }}"
-                                            title="{{ $u->role==='admin'?'Rétrograder en agent':'Promouvoir en admin' }}"
+                                            class="btn btn-sm {{ $u->role==='admin' ? 'btn-outline-info' : 'btn-outline-primary' }}"
+                                            title="Changer le rôle"
                                             onclick="return confirm('Modifier le rôle de {{ $u->prenom }} {{ $u->nom }} ?')">
                                         <i class="bi bi-arrow-left-right me-1"></i>
-                                        {{ $u->role==='admin'?'Rétrograder':'Promouvoir' }}
+                                        Promouvoir
                                     </button>
                                 </form>
 
-                                {{-- Supprimer ou Transférer --}}
-                                @if($hasData)
-                                    <a href="{{ route('admin.users.transfer.form', $u->id) }}"
-                                       class="btn btn-sm btn-outline-warning"
-                                       title="Ce compte a {{ $userCircuitsCount }} passage(s) et {{ $userMouvementsCount }} mouvement(s). Transférer avant suppression">
-                                        <i class="bi bi-shuffle me-1"></i>Transférer
-                                    </a>
-                                @else
-                                    <form method="POST" action="{{ route('admin.users.destroy', $u->id) }}" class="d-inline"
-                                          onsubmit="return confirm('Supprimer définitivement le compte de {{ $u->prenom }} {{ $u->nom }} ?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                @endif
+                                {{-- Supprimer (les données sont automatiquement transférées à l'admin) --}}
+                                <form method="POST" action="{{ route('admin.users.destroy', $u->id) }}" class="d-inline"
+                                      onsubmit="return confirm('⚠️ Supprimer définitivement le compte de {{ $u->prenom }} {{ $u->nom }} ? Ses données (patients, mouvements) seront transférées à votre compte.')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
                             </div>
                             @else
                             <span style="font-size:.78rem;color:var(--muted)">—</span>
                             @endif
-                         </td>
-                     </tr>
+                        </td>
+                    </tr>
                     @endforeach
                 </tbody>
             </table>

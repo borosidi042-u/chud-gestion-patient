@@ -51,7 +51,7 @@ class UserController extends Controller
     public function changerRole(Request $request, $id)
     {
         if (Auth::user()->role !== 'admin') abort(403);
-        $request->validate(['role' => 'required|in:admin,user']);
+        $request->validate(['role' => 'required|in:admin,user,infirmier']);
         $user = User::findOrFail($id);
         if ($user->id === Auth::id()) {
             return back()->with('error', 'Vous ne pouvez pas modifier votre propre rôle.');
@@ -60,6 +60,9 @@ class UserController extends Controller
         return back()->with('success', 'Rôle de ' . $user->prenom . ' ' . $user->nom . ' mis à jour.');
     }
 
+    /**
+     * Supprimer un utilisateur et transférer automatiquement ses données à l'admin
+     */
     public function destroy($id)
     {
         if (Auth::user()->role !== 'admin') abort(403);
@@ -72,35 +75,61 @@ class UserController extends Controller
                              ->with('error', '❌ Vous ne pouvez pas supprimer votre propre compte.');
         }
 
-        // Vérifier si l'utilisateur a des données liées (factures ou circuits)
-        $facturesCount = $user->factures()->count();
-        $circuitsCount = $user->circuits()->count();
+        // Récupérer l'administrateur qui effectue la suppression
+        $adminUser = Auth::user();
 
-        if ($facturesCount > 0 || $circuitsCount > 0) {
-            $message = "⚠️ Impossible de supprimer le compte de {$user->prenom} {$user->nom} car il est lié à :";
-            if ($facturesCount > 0) {
-                $message .= "\n• {$facturesCount} facture(s) enregistrée(s)";
-            }
-            if ($circuitsCount > 0) {
-                $message .= "\n• {$circuitsCount} passage(s) enregistré(s)";
-            }
-            $message .= "\n\n💡 Solution : Utilisez le bouton 'Transférer' pour déplacer ces données avant suppression.";
-
-            return redirect()->route('admin.users.index')
-                             ->with('error', $message);
-        }
-
-        // Si tout est OK, supprimer le compte
+        DB::beginTransaction();
         try {
+            $mouvementsTransferred = 0;
+            $circuitsTransferred = 0;
+            $patientsTransferred = 0;
+
+            // Transférer les mouvements (table mouvements, colonne agent_id)
+            $mouvementsTransferred = DB::table('mouvements')
+                ->where('agent_id', $user->id)
+                ->update(['agent_id' => $adminUser->id]);
+
+            // Transférer les circuits (table circuits, colonne user_id)
+            $circuitsTransferred = DB::table('circuits')
+                ->where('user_id', $user->id)
+                ->update(['user_id' => $adminUser->id]);
+
+            // Transférer les patients (table patients, colonne user_id)
+            $patientsTransferred = DB::table('patients')
+                ->where('user_id', $user->id)
+                ->update(['user_id' => $adminUser->id]);
+
+            // Supprimer l'utilisateur
             $user->delete();
+
+            DB::commit();
+
+            // Construire le message de succès
+            $message = "✅ Compte de {$user->prenom} {$user->nom} supprimé avec succès.";
+            $details = [];
+            if ($mouvementsTransferred > 0) $details[] = "{$mouvementsTransferred} mouvement(s)";
+            if ($circuitsTransferred > 0) $details[] = "{$circuitsTransferred} circuit(s)";
+            if ($patientsTransferred > 0) $details[] = "{$patientsTransferred} patient(s)";
+
+            if (!empty($details)) {
+                $message .= " Les données suivantes ont été transférées à votre compte : " . implode(', ', $details) . ".";
+            } else {
+                $message .= " Aucune donnée n'était associée à ce compte.";
+            }
+
             return redirect()->route('admin.users.index')
-                             ->with('success', "✅ Compte de {$user->prenom} {$user->nom} supprimé avec succès.");
+                             ->with('success', $message);
+
         } catch (\Exception $e) {
+            DB::rollBack();
             return redirect()->route('admin.users.index')
                              ->with('error', "❌ Erreur lors de la suppression : " . $e->getMessage());
         }
     }
 
+    /**
+     * Afficher le formulaire de transfert de données (gardé pour compatibilité, mais plus nécessaire)
+     */
     public function showTransferForm($id)
     {
         if (Auth::user()->role !== 'admin') abort(403);
@@ -108,19 +137,23 @@ class UserController extends Controller
         $oldUser = User::findOrFail($id);
         $users = User::orderBy('nom')->get();
 
-        $facturesCount = $oldUser->factures()->count();
+        // Compter les données liées
         $circuitsCount = $oldUser->circuits()->count();
-        $patientsCount = 0; // Pas de relation directe, on met 0
+        $mouvementsCount = $oldUser->mouvements()->count();
+        $patientsCount = $oldUser->patients()->count();
 
-        return view('admin.users.transfer', compact('oldUser', 'users', 'facturesCount', 'circuitsCount', 'patientsCount'));
+        return view('admin.users.transfer', compact('oldUser', 'users', 'circuitsCount', 'mouvementsCount', 'patientsCount'));
     }
 
+    /**
+     * Transférer les données d'un utilisateur à un autre (gardé pour compatibilité)
+     */
     public function transferData(Request $request, $id)
     {
         if (Auth::user()->role !== 'admin') abort(403);
 
         $request->validate([
-            'new_user_id' => 'required|exists:users,id|different:old_user_id',
+            'new_user_id' => 'required|exists:users,id',
         ]);
 
         $oldUser = User::findOrFail($id);
@@ -132,24 +165,27 @@ class UserController extends Controller
 
         DB::beginTransaction();
         try {
-            // Transférer les factures
-            $facturesTransferred = DB::table('factures')
-                ->where('user_id', $oldUser->id)
-                ->update(['user_id' => $newUser->id]);
+            // Transférer les mouvements
+            $mouvementsTransferred = DB::table('mouvements')
+                ->where('agent_id', $oldUser->id)
+                ->update(['agent_id' => $newUser->id]);
 
             // Transférer les circuits
             $circuitsTransferred = DB::table('circuits')
                 ->where('user_id', $oldUser->id)
                 ->update(['user_id' => $newUser->id]);
 
+            // Transférer les patients
+            $patientsTransferred = DB::table('patients')
+                ->where('user_id', $oldUser->id)
+                ->update(['user_id' => $newUser->id]);
+
             DB::commit();
 
             $message = "✅ Transfert effectué avec succès :";
-            if ($facturesTransferred > 0) $message .= "\n• {$facturesTransferred} facture(s) transférée(s)";
-            if ($circuitsTransferred > 0) $message .= "\n• {$circuitsTransferred} passage(s) transféré(s)";
-
-            // Maintenant supprimer l'ancien utilisateur
-            $oldUser->delete();
+            if ($mouvementsTransferred > 0) $message .= "\n• {$mouvementsTransferred} mouvement(s) transféré(s)";
+            if ($circuitsTransferred > 0) $message .= "\n• {$circuitsTransferred} circuit(s) transféré(s)";
+            if ($patientsTransferred > 0) $message .= "\n• {$patientsTransferred} patient(s) transféré(s)";
 
             return redirect()->route('admin.users.index')
                              ->with('success', $message);

@@ -417,13 +417,6 @@
 </style>
 
 <script>
-// Confirmation pour terminer la visite
-document.getElementById('btnTerminerVisite')?.addEventListener('click', function(e) {
-    if (!confirm('Êtes-vous sûr de vouloir terminer cette visite ? Cette action clôturera la visite en cours.')) {
-        e.preventDefault();
-    }
-});
-
 // Menu contextuel personnalisé
 let contextMenu = null;
 

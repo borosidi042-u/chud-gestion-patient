@@ -68,7 +68,7 @@
                     </div>
 
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-danger" onclick="return confirm('Supprimer définitivement le lit N°{{ $lit->numero }} ?')">
+                        <button type="submit" class="btn btn-danger" >
                             <i class="bi bi-trash me-1"></i>Confirmer la suppression
                         </button>
                         <a href="{{ route('lits.index') }}" class="btn btn-outline-secondary">

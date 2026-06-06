@@ -12,7 +12,7 @@
                 <div class="alert alert-warning mb-4">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                     <strong>Attention !</strong> Le compte <strong>{{ $oldUser->prenom }} {{ $oldUser->nom }}</strong>
-                    a des données (factures, passages) qui l'empêchent d'être supprimé.
+                    a des données (circuits, mouvements, patients) qui l'empêchent d'être supprimé.
                 </div>
 
                 <div class="alert alert-info mb-4">
@@ -24,16 +24,16 @@
                     <h6 class="fw-semibold mb-2">📊 Données à transférer :</h6>
                     <ul class="list-group">
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Factures enregistrées
-                            <span class="badge bg-primary rounded-pill">{{ $facturesCount }}</span>
+                            Circuits enregistrés
+                            <span class="badge bg-primary rounded-pill">{{ $circuitsCount ?? 0 }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Passages enregistrés
-                            <span class="badge bg-primary rounded-pill">{{ $circuitsCount }}</span>
+                            Mouvements enregistrés
+                            <span class="badge bg-primary rounded-pill">{{ $mouvementsCount ?? 0 }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             Patients créés
-                            <span class="badge bg-primary rounded-pill">{{ $patientsCount }}</span>
+                            <span class="badge bg-primary rounded-pill">{{ $patientsCount ?? 0 }}</span>
                         </li>
                     </ul>
                 </div>
@@ -50,7 +50,7 @@
                                 @if($user->id !== $oldUser->id)
                                 <option value="{{ $user->id }}">
                                     {{ $user->prenom }} {{ $user->nom }}
-                                    ({{ $user->role === 'admin' ? 'Admin' : 'Agent' }})
+                                    ({{ $user->role === 'admin' ? 'Admin' : ($user->role === 'infirmier' ? 'Infirmier' : 'Agent') }})
                                     {{ $user->id === Auth::id() ? ' - Vous' : '' }}
                                 </option>
                                 @endif
