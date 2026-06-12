@@ -20,9 +20,10 @@ RUN a2enmod rewrite
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Crée le dossier et le fichier avec les permissions d'écriture globales
+# Crée la base de données SQLite et lance les migrations DIRECTEMENT pendant le build
 RUN mkdir -p /var/www/html/database && \
     touch /var/www/html/database/database.sqlite && \
-    chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
+    chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database && \
+    php artisan migrate --force
 
 EXPOSE 80
