@@ -20,10 +20,13 @@ RUN a2enmod rewrite
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Crée la base de données SQLite et lance les migrations DIRECTEMENT pendant le build
+# Crée la base SQLite, lance les migrations et NETTOIE LE CACHE DES ROUTES
 RUN mkdir -p /var/www/html/database && \
     touch /var/www/html/database/database.sqlite && \
     chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database && \
+    php artisan config:clear && \
+    php artisan cache:clear && \
+    php artisan route:clear && \
     php artisan migrate --force
 
 EXPOSE 80
