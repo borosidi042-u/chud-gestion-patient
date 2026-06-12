@@ -19,14 +19,13 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.
 RUN a2enmod rewrite
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction
-
-# Crée la base SQLite, lance les migrations et NETTOIE LE CACHE DES ROUTES
+# Crée la base SQLite, lance d'abord les migrations, puis nettoie les caches
 RUN mkdir -p /var/www/html/database && \
     touch /var/www/html/database/database.sqlite && \
     chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database && \
+    php artisan migrate --force && \
     php artisan config:clear && \
     php artisan cache:clear && \
-    php artisan route:clear && \
-    php artisan migrate --force
+    php artisan route:clear
 
 EXPOSE 80
