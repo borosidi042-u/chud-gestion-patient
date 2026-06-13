@@ -20,12 +20,12 @@ RUN a2enmod rewrite
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 # Crée la base SQLite, lance d'abord les migrations, puis nettoie les caches
-# Crée la base SQLite, lance les migrations, injecte l'admin et nettoie le cache
+# Crée la base SQLite, lance les migrations, force le seeding et nettoie le cache
 RUN mkdir -p /var/www/html/database && \
     touch /var/www/html/database/database.sqlite && \
     chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database && \
     php artisan migrate --force && \
-    php artisan db:seed && \
+    php artisan db:seed --force && \
     php artisan config:clear && \
     php artisan cache:clear && \
     php artisan route:clear
